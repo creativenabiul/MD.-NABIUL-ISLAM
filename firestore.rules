@@ -1,0 +1,450 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && (
+          request.auth.token.email == 'creative.nabiul@gmail.com'
+          || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        );
+    }
+
+    function isValidStatus(status) {
+      return status is string && (status == 'published' || status == 'draft');
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isOptionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isValidStringList(listVal, maxItems) {
+      return listVal is list
+        && listVal.size() <= maxItems
+        && (listVal.size() == 0 || (listVal[0] is string && listVal[0].size() <= 300));
+    }
+
+    function isValidProfile(data) {
+      return data.keys().hasAll(['fullName', 'headline', 'heroDescription', 'location', 'email', 'phone', 'availability', 'isAvailable', 'updatedAt'])
+        && data.keys().hasOnly(['fullName', 'headline', 'heroDescription', 'location', 'email', 'phone', 'availability', 'isAvailable', 'profileImageUrl', 'cvUrl', 'cvFilename', 'updatedAt'])
+        && isValidString(data.fullName, 2, 120)
+        && isValidString(data.headline, 2, 220)
+        && isValidString(data.heroDescription, 10, 800)
+        && isValidString(data.location, 2, 200)
+        && isValidString(data.email, 3, 160)
+        && isValidString(data.phone, 5, 40)
+        && isValidString(data.availability, 2, 200)
+        && data.isAvailable is bool
+        && isOptionalString(data, 'profileImageUrl', 500)
+        && isOptionalString(data, 'cvUrl', 500)
+        && isOptionalString(data, 'cvFilename', 160)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidAbout(data) {
+      return data.keys().hasAll(['introduction', 'background', 'careerObjective', 'interests', 'updatedAt'])
+        && data.keys().hasOnly(['introduction', 'background', 'careerObjective', 'interests', 'portraitImageUrl', 'updatedAt'])
+        && isValidString(data.introduction, 10, 1200)
+        && isValidString(data.background, 10, 1200)
+        && isValidString(data.careerObjective, 10, 800)
+        && isValidStringList(data.interests, 15)
+        && isOptionalString(data, 'portraitImageUrl', 500)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidService(data) {
+      return data.keys().hasAll(['title', 'deliverables', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'description', 'deliverables', 'sortOrder', 'status', 'updatedAt'])
+        && isValidString(data.title, 2, 120)
+        && isOptionalString(data, 'description', 600)
+        && isValidStringList(data.deliverables, 15)
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidSkill(data) {
+      return data.keys().hasAll(['name', 'category', 'hasLevel', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'category', 'proficiencyLabel', 'level', 'hasLevel', 'sortOrder', 'status', 'updatedAt'])
+        && isValidString(data.name, 1, 100)
+        && isValidString(data.category, 2, 80)
+        && isOptionalString(data, 'proficiencyLabel', 60)
+        && data.hasLevel is bool
+        && (!('level' in data) || (data.level is number && data.level >= 0 && data.level <= 100))
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidStatistic(data) {
+      return data.keys().hasAll(['value', 'label', 'isVisible', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['value', 'suffix', 'label', 'description', 'isVisible', 'sortOrder', 'status', 'updatedAt'])
+        && data.value is number
+        && isOptionalString(data, 'suffix', 10)
+        && isValidString(data.label, 2, 100)
+        && isOptionalString(data, 'description', 240)
+        && data.isVisible is bool
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidExperience(data) {
+      return data.keys().hasAll(['role', 'organization', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['role', 'organization', 'context', 'period', 'description', 'sortOrder', 'status', 'updatedAt'])
+        && isValidString(data.role, 2, 160)
+        && isValidString(data.organization, 2, 180)
+        && isOptionalString(data, 'context', 240)
+        && isOptionalString(data, 'period', 80)
+        && isOptionalString(data, 'description', 800)
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidEducation(data) {
+      return data.keys().hasAll(['degree', 'institution', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['degree', 'institution', 'focus', 'period', 'sortOrder', 'status', 'updatedAt'])
+        && isValidString(data.degree, 2, 180)
+        && isValidString(data.institution, 2, 180)
+        && isOptionalString(data, 'focus', 160)
+        && isOptionalString(data, 'period', 80)
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidProjectCategory(data) {
+      return data.keys().hasAll(['name', 'slug', 'sortOrder', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'slug', 'sortOrder', 'updatedAt'])
+        && isValidString(data.name, 2, 80)
+        && isValidString(data.slug, 2, 80)
+        && data.slug.matches('^[a-z0-9\\-]+$')
+        && data.sortOrder is number
+        && data.updatedAt == request.time;
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['slug', 'title', 'category', 'shortDescription', 'tools', 'galleryImages', 'featured', 'status', 'sortOrder', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['slug', 'title', 'category', 'shortDescription', 'overview', 'objective', 'challenges', 'approach', 'designProcess', 'finalOutput', 'results', 'tools', 'coverImageUrl', 'galleryImages', 'liveUrl', 'sourceUrl', 'featured', 'status', 'sortOrder', 'createdAt', 'updatedAt'])
+        && isValidString(data.slug, 2, 120)
+        && data.slug.matches('^[a-z0-9\\-]+$')
+        && isValidString(data.title, 2, 160)
+        && isValidString(data.category, 2, 80)
+        && isValidString(data.shortDescription, 10, 400)
+        && isOptionalString(data, 'overview', 2000)
+        && isOptionalString(data, 'objective', 1200)
+        && isOptionalString(data, 'challenges', 1200)
+        && isOptionalString(data, 'approach', 1500)
+        && isOptionalString(data, 'designProcess', 1500)
+        && isOptionalString(data, 'finalOutput', 1200)
+        && isOptionalString(data, 'results', 800)
+        && isValidStringList(data.tools, 20)
+        && isOptionalString(data, 'coverImageUrl', 500)
+        && isValidStringList(data.galleryImages, 15)
+        && isOptionalString(data, 'liveUrl', 500)
+        && isOptionalString(data, 'sourceUrl', 500)
+        && data.featured is bool
+        && isValidStatus(data.status)
+        && data.sortOrder is number
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function isValidCertification(data) {
+      return data.keys().hasAll(['name', 'organization', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'organization', 'issueDate', 'credentialId', 'imageUrl', 'verificationUrl', 'sortOrder', 'status', 'updatedAt'])
+        && isValidString(data.name, 2, 180)
+        && isValidString(data.organization, 2, 180)
+        && isOptionalString(data, 'issueDate', 60)
+        && isOptionalString(data, 'credentialId', 120)
+        && isOptionalString(data, 'imageUrl', 500)
+        && isOptionalString(data, 'verificationUrl', 500)
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidAchievement(data) {
+      return data.keys().hasAll(['title', 'details', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'organization', 'year', 'details', 'category', 'sortOrder', 'status', 'updatedAt'])
+        && isValidString(data.title, 2, 180)
+        && isOptionalString(data, 'organization', 180)
+        && isOptionalString(data, 'year', 40)
+        && isValidString(data.details, 2, 600)
+        && isOptionalString(data, 'category', 80)
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidTestimonial(data) {
+      return data.keys().hasAll(['name', 'quote', 'hasRating', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'position', 'company', 'imageUrl', 'quote', 'rating', 'hasRating', 'sortOrder', 'status', 'updatedAt'])
+        && isValidString(data.name, 2, 120)
+        && isOptionalString(data, 'position', 120)
+        && isOptionalString(data, 'company', 120)
+        && isOptionalString(data, 'imageUrl', 500)
+        && isValidString(data.quote, 10, 1000)
+        && data.hasRating is bool
+        && (!('rating' in data) || (data.rating is number && data.rating >= 1 && data.rating <= 5))
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidSocialLink(data) {
+      return data.keys().hasAll(['platform', 'url', 'isVisible', 'sortOrder', 'updatedAt'])
+        && data.keys().hasOnly(['platform', 'url', 'isVisible', 'sortOrder', 'updatedAt'])
+        && isValidString(data.platform, 2, 50)
+        && isValidString(data.url, 0, 400)
+        && data.isVisible is bool
+        && data.sortOrder is number
+        && data.updatedAt == request.time;
+    }
+
+    function isValidContactMessageCreate(data) {
+      return data.keys().hasAll(['name', 'email', 'subject', 'message', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'email', 'subject', 'message', 'status', 'createdAt', 'updatedAt'])
+        && isValidString(data.name, 2, 100)
+        && isValidString(data.email, 5, 150)
+        && data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && isValidString(data.subject, 2, 160)
+        && isValidString(data.message, 10, 3000)
+        && data.status == 'unread'
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidContactMessageUpdate(data) {
+      return data.keys().hasAll(['name', 'email', 'subject', 'message', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'email', 'subject', 'message', 'status', 'createdAt', 'updatedAt'])
+        && data.status is string
+        && (data.status == 'unread' || data.status == 'read' || data.status == 'archived')
+        && data.updatedAt == request.time;
+    }
+
+    function isValidMediaAsset(data) {
+      return data.keys().hasAll(['title', 'url', 'type', 'altText', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'url', 'type', 'altText', 'mimeType', 'sizeBytes', 'createdAt', 'updatedAt'])
+        && isValidString(data.title, 1, 160)
+        && isValidString(data.url, 1, 500)
+        && data.type is string
+        && (data.type == 'image' || data.type == 'video' || data.type == 'document')
+        && isValidString(data.altText, 0, 240)
+        && isOptionalString(data, 'mimeType', 100)
+        && (!('sizeBytes' in data) || data.sizeBytes is number)
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll(['siteTitle', 'tagline', 'seoDescription', 'marqueeText', 'enable3D', 'enableCustomCursor', 'updatedAt'])
+        && data.keys().hasOnly(['siteTitle', 'tagline', 'seoDescription', 'ogImageUrl', 'showcaseVideoUrl', 'showcasePosterUrl', 'marqueeText', 'accentGoldHex', 'enable3D', 'enableCustomCursor', 'updatedAt'])
+        && isValidString(data.siteTitle, 2, 120)
+        && isValidString(data.tagline, 0, 180)
+        && isValidString(data.seoDescription, 0, 320)
+        && isOptionalString(data, 'ogImageUrl', 500)
+        && isOptionalString(data, 'showcaseVideoUrl', 500)
+        && isOptionalString(data, 'showcasePosterUrl', 500)
+        && isValidString(data.marqueeText, 0, 500)
+        && isOptionalString(data, 'accentGoldHex', 16)
+        && data.enable3D is bool
+        && data.enableCustomCursor is bool
+        && data.updatedAt == request.time;
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'role', 'createdAt'])
+        && isValidId(data.uid)
+        && isValidString(data.email, 3, 180)
+        && data.role is string
+        && (data.role == 'admin' || data.role == 'super_admin')
+        && data.createdAt == request.time;
+    }
+
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(adminId) && isAdmin() && isValidAdminUser(incoming()) && incoming().uid == adminId;
+      allow update: if false;
+      allow delete: if isValidId(adminId) && isAdmin() && adminId != request.auth.uid;
+    }
+
+    match /profiles/{profileId} {
+      allow get: if isValidId(profileId);
+      allow list: if true;
+      allow create: if isValidId(profileId) && isAdmin() && isValidProfile(incoming());
+      allow update: if isValidId(profileId) && isAdmin() && isValidProfile(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'headline', 'heroDescription', 'location', 'email', 'phone', 'availability', 'isAvailable', 'profileImageUrl', 'cvUrl', 'cvFilename', 'updatedAt']);
+      allow delete: if isValidId(profileId) && isAdmin();
+    }
+
+    match /about_sections/{aboutId} {
+      allow get: if isValidId(aboutId);
+      allow list: if true;
+      allow create: if isValidId(aboutId) && isAdmin() && isValidAbout(incoming());
+      allow update: if isValidId(aboutId) && isAdmin() && isValidAbout(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['introduction', 'background', 'careerObjective', 'interests', 'portraitImageUrl', 'updatedAt']);
+      allow delete: if isValidId(aboutId) && isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow get: if isValidId(serviceId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(serviceId) && isAdmin() && isValidService(incoming());
+      allow update: if isValidId(serviceId) && isAdmin() && isValidService(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'deliverables', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(serviceId) && isAdmin();
+    }
+
+    match /skills/{skillId} {
+      allow get: if isValidId(skillId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(skillId) && isAdmin() && isValidSkill(incoming());
+      allow update: if isValidId(skillId) && isAdmin() && isValidSkill(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'proficiencyLabel', 'level', 'hasLevel', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(skillId) && isAdmin();
+    }
+
+    match /statistics/{statId} {
+      allow get: if isValidId(statId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(statId) && isAdmin() && isValidStatistic(incoming());
+      allow update: if isValidId(statId) && isAdmin() && isValidStatistic(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['value', 'suffix', 'label', 'description', 'isVisible', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(statId) && isAdmin();
+    }
+
+    match /experiences/{expId} {
+      allow get: if isValidId(expId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(expId) && isAdmin() && isValidExperience(incoming());
+      allow update: if isValidId(expId) && isAdmin() && isValidExperience(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['role', 'organization', 'context', 'period', 'description', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(expId) && isAdmin();
+    }
+
+    match /education/{eduId} {
+      allow get: if isValidId(eduId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(eduId) && isAdmin() && isValidEducation(incoming());
+      allow update: if isValidId(eduId) && isAdmin() && isValidEducation(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['degree', 'institution', 'focus', 'period', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(eduId) && isAdmin();
+    }
+
+    match /project_categories/{catId} {
+      allow get: if isValidId(catId);
+      allow list: if true;
+      allow create: if isValidId(catId) && isAdmin() && isValidProjectCategory(incoming());
+      allow update: if isValidId(catId) && isAdmin() && isValidProjectCategory(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'slug', 'sortOrder', 'updatedAt']);
+      allow delete: if isValidId(catId) && isAdmin();
+    }
+
+    match /projects/{projectId} {
+      allow get: if isValidId(projectId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(projectId) && isAdmin() && isValidProject(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(projectId) && isAdmin() && isValidProject(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['slug', 'title', 'category', 'shortDescription', 'overview', 'objective', 'challenges', 'approach', 'designProcess', 'finalOutput', 'results', 'tools', 'coverImageUrl', 'galleryImages', 'liveUrl', 'sourceUrl', 'featured', 'status', 'sortOrder', 'updatedAt']);
+      allow delete: if isValidId(projectId) && isAdmin();
+    }
+
+    match /certifications/{certId} {
+      allow get: if isValidId(certId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(certId) && isAdmin() && isValidCertification(incoming());
+      allow update: if isValidId(certId) && isAdmin() && isValidCertification(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'organization', 'issueDate', 'credentialId', 'imageUrl', 'verificationUrl', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(certId) && isAdmin();
+    }
+
+    match /achievements/{achId} {
+      allow get: if isValidId(achId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(achId) && isAdmin() && isValidAchievement(incoming());
+      allow update: if isValidId(achId) && isAdmin() && isValidAchievement(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'organization', 'year', 'details', 'category', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(achId) && isAdmin();
+    }
+
+    match /testimonials/{testId} {
+      allow get: if isValidId(testId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(testId) && isAdmin() && isValidTestimonial(incoming());
+      allow update: if isValidId(testId) && isAdmin() && isValidTestimonial(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'position', 'company', 'imageUrl', 'quote', 'rating', 'hasRating', 'sortOrder', 'status', 'updatedAt']);
+      allow delete: if isValidId(testId) && isAdmin();
+    }
+
+    match /social_links/{linkId} {
+      allow get: if isValidId(linkId);
+      allow list: if true;
+      allow create: if isValidId(linkId) && isAdmin() && isValidSocialLink(incoming());
+      allow update: if isValidId(linkId) && isAdmin() && isValidSocialLink(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['platform', 'url', 'isVisible', 'sortOrder', 'updatedAt']);
+      allow delete: if isValidId(linkId) && isAdmin();
+    }
+
+    match /contact_messages/{msgId} {
+      allow get: if isValidId(msgId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(msgId) && isValidContactMessageCreate(incoming());
+      allow update: if isValidId(msgId) && isAdmin() && isValidContactMessageUpdate(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().name == existing().name
+        && incoming().email == existing().email
+        && incoming().subject == existing().subject
+        && incoming().message == existing().message
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if isValidId(msgId) && isAdmin();
+    }
+
+    match /media_assets/{assetId} {
+      allow get: if isValidId(assetId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(assetId) && isAdmin() && isValidMediaAsset(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(assetId) && isAdmin() && isValidMediaAsset(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'url', 'type', 'altText', 'mimeType', 'sizeBytes', 'updatedAt']);
+      allow delete: if isValidId(assetId) && isAdmin();
+    }
+
+    match /site_settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create: if isValidId(settingId) && isAdmin() && isValidSiteSettings(incoming());
+      allow update: if isValidId(settingId) && isAdmin() && isValidSiteSettings(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['siteTitle', 'tagline', 'seoDescription', 'ogImageUrl', 'showcaseVideoUrl', 'showcasePosterUrl', 'marqueeText', 'accentGoldHex', 'enable3D', 'enableCustomCursor', 'updatedAt']);
+      allow delete: if isValidId(settingId) && isAdmin();
+    }
+  }
+}

@@ -1,0 +1,108 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-obsidian: #070708;
+  --color-charcoal: #111114;
+  --color-surface: #16161B;
+  --color-champagne: #D4B475;
+  --color-champagne-light: #E8D2A0;
+  --color-ivory: #F5F2EB;
+  --color-ash: #8C8A84;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: #070708;
+    color: #F5F2EB;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    overflow-x: hidden;
+    background-color: #070708;
+    color: #F5F2EB;
+    letter-spacing: 0.005em;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background-color: rgba(212, 180, 117, 0.28);
+    color: #F5F2EB;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom subtle editorial scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070708;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272d;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D4B475;
+}
+
+/* Marquee infinite animation */
+@keyframes marqueeScroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 34s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-marquee-track {
+    animation: none;
+  }
+}
+
+/* Editorial outlined text fill transition */
+.editorial-outline-text {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(212, 180, 117, 0.45);
+  background-image: linear-gradient(90deg, #D4B475 0%, #E8D2A0 50%, #D4B475 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-repeat: no-repeat;
+  background-size: var(--fill-progress, 0%) 100%;
+  transition: background-size 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
