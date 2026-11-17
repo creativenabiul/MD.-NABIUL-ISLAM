@@ -14,44 +14,59 @@
     },
     "Profile": {
       "title": "Profile",
-      "description": "Portfolio owner public profile and contact identity.",
+      "description": "Portfolio owner public profile, contact details, and CV configuration.",
       "type": "object",
       "properties": {
         "fullName": { "type": "string", "minLength": 2, "maxLength": 120 },
         "headline": { "type": "string", "minLength": 2, "maxLength": 220 },
+        "shortIntro": { "type": "string", "maxLength": 400 },
+        "aboutSummary": { "type": "string", "maxLength": 600 },
+        "tagline": { "type": "string", "maxLength": 200 },
+        "careerObjective": { "type": "string", "maxLength": 600 },
+        "dateOfBirth": { "type": "string", "maxLength": 40 },
         "heroDescription": { "type": "string", "minLength": 10, "maxLength": 800 },
         "location": { "type": "string", "minLength": 2, "maxLength": 200 },
         "email": { "type": "string", "minLength": 3, "maxLength": 160 },
         "phone": { "type": "string", "minLength": 5, "maxLength": 40 },
+        "whatsapp": { "type": "string", "maxLength": 40 },
+        "googleMapsUrl": { "type": "string", "maxLength": 500 },
         "availability": { "type": "string", "minLength": 2, "maxLength": 200 },
         "isAvailable": { "type": "boolean" },
         "profileImageUrl": { "type": "string", "maxLength": 500 },
+        "coverImageUrl": { "type": "string", "maxLength": 500 },
         "cvUrl": { "type": "string", "maxLength": 500 },
         "cvFilename": { "type": "string", "maxLength": 160 },
+        "cvButtonText": { "type": "string", "maxLength": 60 },
+        "cvVisible": { "type": "boolean" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["fullName", "headline", "heroDescription", "location", "email", "phone", "availability", "isAvailable", "updatedAt"]
     },
     "AboutSection": {
       "title": "AboutSection",
-      "description": "Editorial About narrative and personal background.",
+      "description": "Editorial About narrative, journey, and structured info blocks.",
       "type": "object",
       "properties": {
         "introduction": { "type": "string", "minLength": 10, "maxLength": 1200 },
         "background": { "type": "string", "minLength": 10, "maxLength": 1200 },
+        "journey": { "type": "string", "maxLength": 1600 },
         "careerObjective": { "type": "string", "minLength": 10, "maxLength": 800 },
         "interests": { "type": "array" },
         "portraitImageUrl": { "type": "string", "maxLength": 500 },
+        "additionalBlocksJson": { "type": "string", "maxLength": 6000 },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["introduction", "background", "careerObjective", "interests", "updatedAt"]
     },
     "Service": {
       "title": "Service",
-      "description": "Service discipline and deliverables offered.",
+      "description": "Service discipline, category, icon, image, and deliverables offered.",
       "type": "object",
       "properties": {
         "title": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "category": { "type": "string", "maxLength": 80 },
+        "iconName": { "type": "string", "maxLength": 50 },
+        "imageUrl": { "type": "string", "maxLength": 500 },
         "description": { "type": "string", "maxLength": 600 },
         "deliverables": { "type": "array" },
         "sortOrder": { "type": "number" },
@@ -68,6 +83,8 @@
         "name": { "type": "string", "minLength": 1, "maxLength": 100 },
         "category": { "type": "string", "minLength": 2, "maxLength": 80 },
         "proficiencyLabel": { "type": "string", "maxLength": 60 },
+        "description": { "type": "string", "maxLength": 300 },
+        "iconUrl": { "type": "string", "maxLength": 500 },
         "level": { "type": "number" },
         "hasLevel": { "type": "boolean" },
         "sortOrder": { "type": "number" },
@@ -99,6 +116,11 @@
       "properties": {
         "role": { "type": "string", "minLength": 2, "maxLength": 160 },
         "organization": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "employmentType": { "type": "string", "maxLength": 60 },
+        "startDate": { "type": "string", "maxLength": 40 },
+        "endDate": { "type": "string", "maxLength": 40 },
+        "currentlyWorking": { "type": "boolean" },
+        "logoUrl": { "type": "string", "maxLength": 500 },
         "context": { "type": "string", "maxLength": 240 },
         "period": { "type": "string", "maxLength": 80 },
         "description": { "type": "string", "maxLength": 800 },
@@ -115,6 +137,13 @@
       "properties": {
         "degree": { "type": "string", "minLength": 2, "maxLength": 180 },
         "institution": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "department": { "type": "string", "maxLength": 120 },
+        "focusGroup": { "type": "string", "maxLength": 120 },
+        "startYear": { "type": "string", "maxLength": 30 },
+        "endYear": { "type": "string", "maxLength": 30 },
+        "result": { "type": "string", "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 600 },
+        "certificateUrl": { "type": "string", "maxLength": 500 },
         "focus": { "type": "string", "maxLength": 160 },
         "period": { "type": "string", "maxLength": 80 },
         "sortOrder": { "type": "number" },
@@ -137,7 +166,7 @@
     },
     "Project": {
       "title": "Project",
-      "description": "Portfolio case study with rich process details.",
+      "description": "Portfolio case study with rich process details and per-project SEO.",
       "type": "object",
       "properties": {
         "slug": { "type": "string", "minLength": 2, "maxLength": 120, "pattern": "^[a-z0-9\\-]+$" },
@@ -156,6 +185,9 @@
         "galleryImages": { "type": "array" },
         "liveUrl": { "type": "string", "maxLength": 500 },
         "sourceUrl": { "type": "string", "maxLength": 500 },
+        "seoTitle": { "type": "string", "maxLength": 160 },
+        "seoDescription": { "type": "string", "maxLength": 320 },
+        "ogImageUrl": { "type": "string", "maxLength": 500 },
         "featured": { "type": "boolean" },
         "status": { "type": "string", "enum": ["published", "draft"] },
         "sortOrder": { "type": "number" },
@@ -175,6 +207,7 @@
         "credentialId": { "type": "string", "maxLength": 120 },
         "imageUrl": { "type": "string", "maxLength": 500 },
         "verificationUrl": { "type": "string", "maxLength": 500 },
+        "description": { "type": "string", "maxLength": 600 },
         "sortOrder": { "type": "number" },
         "status": { "type": "string", "enum": ["published", "draft"] },
         "updatedAt": { "type": "string", "format": "date-time" }
@@ -191,6 +224,7 @@
         "year": { "type": "string", "maxLength": 40 },
         "details": { "type": "string", "maxLength": 600 },
         "category": { "type": "string", "maxLength": 80 },
+        "evidenceImageUrl": { "type": "string", "maxLength": 500 },
         "sortOrder": { "type": "number" },
         "status": { "type": "string", "enum": ["published", "draft"] },
         "updatedAt": { "type": "string", "format": "date-time" }
@@ -217,7 +251,7 @@
     },
     "SocialLink": {
       "title": "SocialLink",
-      "description": "Social media profile link.",
+      "description": "Dynamic social media profile link.",
       "type": "object",
       "properties": {
         "platform": { "type": "string", "minLength": 2, "maxLength": 50 },
@@ -245,13 +279,15 @@
     },
     "MediaAsset": {
       "title": "MediaAsset",
-      "description": "Managed image, video, or PDF asset.",
+      "description": "Managed image, video, or PDF asset with folder and caption metadata.",
       "type": "object",
       "properties": {
         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
         "url": { "type": "string", "minLength": 1, "maxLength": 500 },
         "type": { "type": "string", "enum": ["image", "video", "document"] },
         "altText": { "type": "string", "maxLength": 240 },
+        "caption": { "type": "string", "maxLength": 300 },
+        "folder": { "type": "string", "maxLength": 60 },
         "mimeType": { "type": "string", "maxLength": 100 },
         "sizeBytes": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
@@ -259,21 +295,114 @@
       },
       "required": ["title", "url", "type", "altText", "createdAt", "updatedAt"]
     },
+    "WebsiteSection": {
+      "title": "WebsiteSection",
+      "description": "Dynamic CMS-built section composed of safe structured content blocks.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "subtitle": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 1200 },
+        "template": { "type": "string", "enum": ["editorial_text", "feature_cards", "stats_grid", "media_showcase", "gallery_grid", "cta_banner", "list_highlights"] },
+        "blocksJson": { "type": "string", "minLength": 2, "maxLength": 24000 },
+        "backgroundTone": { "type": "string", "enum": ["obsidian", "charcoal", "accent"] },
+        "isVisible": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "status": { "type": "string", "enum": ["published", "draft"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "template", "blocksJson", "backgroundTone", "isVisible", "sortOrder", "status", "createdAt", "updatedAt"]
+    },
+    "NavigationItem": {
+      "title": "NavigationItem",
+      "description": "Editable public header navigation link.",
+      "type": "object",
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "destination": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "sectionId": { "type": "string", "maxLength": 80 },
+        "parentLabel": { "type": "string", "maxLength": 60 },
+        "isExternal": { "type": "boolean" },
+        "isVisible": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["label", "destination", "isExternal", "isVisible", "sortOrder", "updatedAt"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Immutable admin audit log entry.",
+      "type": "object",
+      "properties": {
+        "actorEmail": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "action": { "type": "string", "enum": ["login", "logout", "create", "update", "delete", "publish", "unpublish", "media_upload", "settings_change", "restore_version", "backup_export"] },
+        "entityType": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "entityId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "summary": { "type": "string", "minLength": 2, "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorEmail", "action", "entityType", "entityId", "summary", "createdAt"]
+    },
+    "ContentVersion": {
+      "title": "ContentVersion",
+      "description": "Point-in-time snapshot of CMS content for safe rollback.",
+      "type": "object",
+      "properties": {
+        "entityType": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "entityId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "label": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "snapshotJson": { "type": "string", "minLength": 2, "maxLength": 40000 },
+        "actorEmail": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["entityType", "entityId", "label", "snapshotJson", "actorEmail", "createdAt"]
+    },
     "SiteSettings": {
       "title": "SiteSettings",
-      "description": "SEO, visual appearance, and showcase media settings.",
+      "description": "SEO, hero, visual design customization, contact settings, and security preferences.",
       "type": "object",
       "properties": {
         "siteTitle": { "type": "string", "minLength": 2, "maxLength": 120 },
         "tagline": { "type": "string", "maxLength": 180 },
         "seoDescription": { "type": "string", "maxLength": 320 },
+        "seoKeywords": { "type": "string", "maxLength": 320 },
+        "ogTitle": { "type": "string", "maxLength": 160 },
+        "ogDescription": { "type": "string", "maxLength": 320 },
         "ogImageUrl": { "type": "string", "maxLength": 500 },
+        "canonicalUrl": { "type": "string", "maxLength": 400 },
+        "robotsMeta": { "type": "string", "maxLength": 120 },
+        "pageSeoJson": { "type": "string", "maxLength": 4000 },
         "showcaseVideoUrl": { "type": "string", "maxLength": 500 },
         "showcasePosterUrl": { "type": "string", "maxLength": 500 },
         "marqueeText": { "type": "string", "maxLength": 500 },
         "accentGoldHex": { "type": "string", "maxLength": 16 },
+        "primaryBgHex": { "type": "string", "maxLength": 16 },
+        "secondaryBgHex": { "type": "string", "maxLength": 16 },
+        "textColorHex": { "type": "string", "maxLength": 16 },
+        "headingFont": { "type": "string", "enum": ["cormorant", "playfair", "jakarta"] },
+        "bodyFont": { "type": "string", "enum": ["jakarta", "inter", "system"] },
+        "themeMode": { "type": "string", "enum": ["dark", "light"] },
+        "buttonStyle": { "type": "string", "enum": ["sweep", "solid", "outline"] },
+        "borderRadiusStyle": { "type": "string", "enum": ["sharp", "rounded", "soft"] },
+        "sectionSpacing": { "type": "string", "enum": ["compact", "standard", "airy"] },
+        "headerStyle": { "type": "string", "enum": ["glass", "solid", "minimal"] },
+        "footerStyle": { "type": "string", "enum": ["editorial", "compact"] },
+        "heroHeadlineLines": { "type": "array" },
+        "heroSubtitle": { "type": "string", "maxLength": 200 },
+        "heroPrimaryCtaText": { "type": "string", "maxLength": 60 },
+        "heroPrimaryCtaLink": { "type": "string", "maxLength": 300 },
+        "heroSecondaryCtaText": { "type": "string", "maxLength": 60 },
+        "heroSecondaryCtaLink": { "type": "string", "maxLength": 300 },
+        "heroBackgroundImageUrl": { "type": "string", "maxLength": 500 },
+        "showHeroSection": { "type": "boolean" },
+        "heroAnimationIntensity": { "type": "string", "enum": ["full", "subtle", "minimal"] },
         "enable3D": { "type": "boolean" },
         "enableCustomCursor": { "type": "boolean" },
+        "contactFormEnabled": { "type": "boolean" },
+        "contactAvailabilityNote": { "type": "string", "maxLength": 400 },
+        "showAdminFooterLink": { "type": "boolean" },
+        "sessionTimeoutMinutes": { "type": "number" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["siteTitle", "tagline", "seoDescription", "marqueeText", "enable3D", "enableCustomCursor", "updatedAt"]
@@ -334,7 +463,7 @@
     },
     "/social_links/{linkId}": {
       "schema": { "$ref": "#/entities/SocialLink" },
-      "description": "Social media profile links."
+      "description": "Dynamic social media profile links."
     },
     "/contact_messages/{msgId}": {
       "schema": { "$ref": "#/entities/ContactMessage" },
@@ -344,9 +473,25 @@
       "schema": { "$ref": "#/entities/MediaAsset" },
       "description": "Admin-managed media library."
     },
+    "/website_sections/{sectionId}": {
+      "schema": { "$ref": "#/entities/WebsiteSection" },
+      "description": "Dynamic drag-and-drop website sections."
+    },
+    "/navigation_items/{navId}": {
+      "schema": { "$ref": "#/entities/NavigationItem" },
+      "description": "Header navigation menu links."
+    },
+    "/activity_logs/{logId}": {
+      "schema": { "$ref": "#/entities/ActivityLog" },
+      "description": "Admin audit trail logs."
+    },
+    "/content_versions/{versionId}": {
+      "schema": { "$ref": "#/entities/ContentVersion" },
+      "description": "CMS version snapshots for rollback."
+    },
     "/site_settings/{settingId}": {
       "schema": { "$ref": "#/entities/SiteSettings" },
-      "description": "Site SEO and appearance settings."
+      "description": "Site SEO, Hero, Design, Contact, and Security settings."
     }
   }
 }

@@ -193,13 +193,48 @@ async function requireAdminAuth(req: AuthedRequest, res: Response, next: NextFun
   }
 }
 
+// Server-side Session Verification Check
+app.get('/api/admin/verify-session', requireAdminAuth, (req: AuthedRequest, res: Response) => {
+  return res.json({
+    ok: true,
+    email: req.adminEmail,
+    uid: req.adminUid,
+  });
+});
+
 const uploadSchema = z.object({
   filename: z.string().min(1).max(160),
   mimeType: z.string().min(3).max(100),
   dataBase64: z.string().min(4),
+  folder: z.string().max(60).optional(),
 });
 
-const ALLOWED_MIME_PREFIXES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'video/mp4', 'video/webm', 'application/pdf'];
+const ALLOWED_MIME_PREFIXES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/avif',
+  'image/svg+xml',
+  'video/mp4',
+  'video/webm',
+  'application/pdf',
+];
+
+function sanitizeSvgBuffer(inputBuffer: Buffer): Buffer | null {
+  const raw = inputBuffer.toString('utf8');
+  if (!/<svg[\s>]/i.test(raw)) {
+    return null;
+  }
+  const cleaned = raw
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<foreignObject[\s\S]*?>[\s\S]*?<\/foreignObject>/gi, '')
+    .replace(/<(iframe|object|embed|applet|meta|link)[\s\S]*?>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<(iframe|object|embed|applet|meta|link)[^>]*\/?>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:')
+    .replace(/data\s*:\s*text\/html/gi, 'blocked:');
+  return Buffer.from(cleaned, 'utf8');
+}
 
 // Authenticated Media / CV Upload Endpoint
 app.post('/api/admin/upload', requireAdminAuth, (req: AuthedRequest, res: Response) => {
@@ -208,13 +243,21 @@ app.post('/api/admin/upload', requireAdminAuth, (req: AuthedRequest, res: Respon
     return res.status(400).json({ error: 'Invalid upload payload' });
   }
 
-  const { filename, mimeType, dataBase64 } = parsed.data;
+  const { filename, mimeType, dataBase64, folder } = parsed.data;
   if (!ALLOWED_MIME_PREFIXES.includes(mimeType)) {
-    return res.status(400).json({ error: 'Unsupported file type. Allowed: JPG, PNG, WebP, AVIF, MP4, WebM, PDF.' });
+    return res.status(400).json({ error: 'Unsupported file type. Allowed: JPG, PNG, WebP, AVIF, SVG, MP4, WebM, PDF.' });
   }
 
   const rawBase64 = dataBase64.includes(',') ? dataBase64.split(',')[1] : dataBase64;
-  const buffer = Buffer.from(rawBase64, 'base64');
+  let buffer: Buffer = Buffer.from(rawBase64, 'base64');
+
+  if (mimeType === 'image/svg+xml') {
+    const sanitized = sanitizeSvgBuffer(buffer);
+    if (!sanitized) {
+      return res.status(400).json({ error: 'Invalid SVG file: missing <svg> root element.' });
+    }
+    buffer = sanitized;
+  }
 
   const maxBytes = mimeType.startsWith('video/') ? 15 * 1024 * 1024 : 8 * 1024 * 1024;
   if (buffer.byteLength === 0 || buffer.byteLength > maxBytes) {
@@ -243,6 +286,7 @@ app.post('/api/admin/upload', requireAdminAuth, (req: AuthedRequest, res: Respon
     mimeType,
     sizeBytes: buffer.byteLength,
     type: assetType,
+    folder: folder ? sanitizePlainText(folder).slice(0, 50) : 'general',
   });
 });
 
@@ -345,9 +389,38 @@ app.get('/robots.txt', (req: Request, res: Response) => {
   );
 });
 
-app.get('/sitemap.xml', (req: Request, res: Response) => {
+app.get('/sitemap.xml', async (req: Request, res: Response) => {
   const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
   const urls = ['/', '/about', '/projects', '/contact'];
+
+  try {
+    const databaseId = firebaseConfig.firestoreDatabaseId || '(default)';
+    const listUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${databaseId}/documents/projects?pageSize=100&key=${encodeURIComponent(firebaseConfig.apiKey)}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2000);
+    const resp = await fetch(listUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (resp.ok) {
+      const json = (await resp.json()) as {
+        documents?: Array<{
+          fields?: {
+            slug?: { stringValue?: string };
+            status?: { stringValue?: string };
+          };
+        }>;
+      };
+      for (const docItem of json.documents || []) {
+        const slugVal = docItem.fields?.slug?.stringValue;
+        const statusVal = docItem.fields?.status?.stringValue;
+        if (slugVal && statusVal === 'published') {
+          urls.push(`/projects/${encodeURIComponent(slugVal)}`);
+        }
+      }
+    }
+  } catch {
+    // Non-blocking fallback to static routes
+  }
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls

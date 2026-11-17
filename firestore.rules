@@ -42,44 +42,82 @@ service cloud.firestore {
       return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
     }
 
+    function isOptionalBool(data, field) {
+      return !(field in data) || data[field] is bool;
+    }
+
+    function isOptionalNumber(data, field, minVal, maxVal) {
+      return !(field in data) || (data[field] is number && data[field] >= minVal && data[field] <= maxVal);
+    }
+
     function isValidStringList(listVal, maxItems) {
       return listVal is list
         && listVal.size() <= maxItems
         && (listVal.size() == 0 || (listVal[0] is string && listVal[0].size() <= 300));
     }
 
+    function isOptionalStringList(data, field, maxItems) {
+      return !(field in data) || isValidStringList(data[field], maxItems);
+    }
+
     function isValidProfile(data) {
       return data.keys().hasAll(['fullName', 'headline', 'heroDescription', 'location', 'email', 'phone', 'availability', 'isAvailable', 'updatedAt'])
-        && data.keys().hasOnly(['fullName', 'headline', 'heroDescription', 'location', 'email', 'phone', 'availability', 'isAvailable', 'profileImageUrl', 'cvUrl', 'cvFilename', 'updatedAt'])
+        && data.keys().hasOnly([
+          'fullName', 'headline', 'shortIntro', 'aboutSummary', 'tagline', 'careerObjective',
+          'dateOfBirth', 'heroDescription', 'location', 'email', 'phone', 'whatsapp',
+          'googleMapsUrl', 'availability', 'isAvailable', 'profileImageUrl', 'coverImageUrl',
+          'cvUrl', 'cvFilename', 'cvButtonText', 'cvVisible', 'updatedAt'
+        ])
         && isValidString(data.fullName, 2, 120)
         && isValidString(data.headline, 2, 220)
+        && isOptionalString(data, 'shortIntro', 400)
+        && isOptionalString(data, 'aboutSummary', 600)
+        && isOptionalString(data, 'tagline', 200)
+        && isOptionalString(data, 'careerObjective', 600)
+        && isOptionalString(data, 'dateOfBirth', 40)
         && isValidString(data.heroDescription, 10, 800)
         && isValidString(data.location, 2, 200)
         && isValidString(data.email, 3, 160)
         && isValidString(data.phone, 5, 40)
+        && isOptionalString(data, 'whatsapp', 40)
+        && isOptionalString(data, 'googleMapsUrl', 500)
         && isValidString(data.availability, 2, 200)
         && data.isAvailable is bool
         && isOptionalString(data, 'profileImageUrl', 500)
+        && isOptionalString(data, 'coverImageUrl', 500)
         && isOptionalString(data, 'cvUrl', 500)
         && isOptionalString(data, 'cvFilename', 160)
+        && isOptionalString(data, 'cvButtonText', 60)
+        && isOptionalBool(data, 'cvVisible')
         && data.updatedAt == request.time;
     }
 
     function isValidAbout(data) {
       return data.keys().hasAll(['introduction', 'background', 'careerObjective', 'interests', 'updatedAt'])
-        && data.keys().hasOnly(['introduction', 'background', 'careerObjective', 'interests', 'portraitImageUrl', 'updatedAt'])
+        && data.keys().hasOnly([
+          'introduction', 'background', 'journey', 'careerObjective',
+          'interests', 'portraitImageUrl', 'additionalBlocksJson', 'updatedAt'
+        ])
         && isValidString(data.introduction, 10, 1200)
         && isValidString(data.background, 10, 1200)
+        && isOptionalString(data, 'journey', 1600)
         && isValidString(data.careerObjective, 10, 800)
         && isValidStringList(data.interests, 15)
         && isOptionalString(data, 'portraitImageUrl', 500)
+        && isOptionalString(data, 'additionalBlocksJson', 6000)
         && data.updatedAt == request.time;
     }
 
     function isValidService(data) {
       return data.keys().hasAll(['title', 'deliverables', 'sortOrder', 'status', 'updatedAt'])
-        && data.keys().hasOnly(['title', 'description', 'deliverables', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly([
+          'title', 'category', 'iconName', 'imageUrl', 'description',
+          'deliverables', 'sortOrder', 'status', 'updatedAt'
+        ])
         && isValidString(data.title, 2, 120)
+        && isOptionalString(data, 'category', 80)
+        && isOptionalString(data, 'iconName', 50)
+        && isOptionalString(data, 'imageUrl', 500)
         && isOptionalString(data, 'description', 600)
         && isValidStringList(data.deliverables, 15)
         && data.sortOrder is number
@@ -89,12 +127,17 @@ service cloud.firestore {
 
     function isValidSkill(data) {
       return data.keys().hasAll(['name', 'category', 'hasLevel', 'sortOrder', 'status', 'updatedAt'])
-        && data.keys().hasOnly(['name', 'category', 'proficiencyLabel', 'level', 'hasLevel', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly([
+          'name', 'category', 'proficiencyLabel', 'description', 'iconUrl',
+          'level', 'hasLevel', 'sortOrder', 'status', 'updatedAt'
+        ])
         && isValidString(data.name, 1, 100)
         && isValidString(data.category, 2, 80)
         && isOptionalString(data, 'proficiencyLabel', 60)
+        && isOptionalString(data, 'description', 300)
+        && isOptionalString(data, 'iconUrl', 500)
         && data.hasLevel is bool
-        && (!('level' in data) || (data.level is number && data.level >= 0 && data.level <= 100))
+        && isOptionalNumber(data, 'level', 0, 100)
         && data.sortOrder is number
         && isValidStatus(data.status)
         && data.updatedAt == request.time;
@@ -115,9 +158,18 @@ service cloud.firestore {
 
     function isValidExperience(data) {
       return data.keys().hasAll(['role', 'organization', 'sortOrder', 'status', 'updatedAt'])
-        && data.keys().hasOnly(['role', 'organization', 'context', 'period', 'description', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly([
+          'role', 'organization', 'employmentType', 'startDate', 'endDate',
+          'currentlyWorking', 'logoUrl', 'context', 'period', 'description',
+          'sortOrder', 'status', 'updatedAt'
+        ])
         && isValidString(data.role, 2, 160)
         && isValidString(data.organization, 2, 180)
+        && isOptionalString(data, 'employmentType', 60)
+        && isOptionalString(data, 'startDate', 40)
+        && isOptionalString(data, 'endDate', 40)
+        && isOptionalBool(data, 'currentlyWorking')
+        && isOptionalString(data, 'logoUrl', 500)
         && isOptionalString(data, 'context', 240)
         && isOptionalString(data, 'period', 80)
         && isOptionalString(data, 'description', 800)
@@ -128,9 +180,20 @@ service cloud.firestore {
 
     function isValidEducation(data) {
       return data.keys().hasAll(['degree', 'institution', 'sortOrder', 'status', 'updatedAt'])
-        && data.keys().hasOnly(['degree', 'institution', 'focus', 'period', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly([
+          'degree', 'institution', 'department', 'focusGroup', 'startYear', 'endYear',
+          'result', 'description', 'certificateUrl', 'focus', 'period',
+          'sortOrder', 'status', 'updatedAt'
+        ])
         && isValidString(data.degree, 2, 180)
         && isValidString(data.institution, 2, 180)
+        && isOptionalString(data, 'department', 120)
+        && isOptionalString(data, 'focusGroup', 120)
+        && isOptionalString(data, 'startYear', 30)
+        && isOptionalString(data, 'endYear', 30)
+        && isOptionalString(data, 'result', 80)
+        && isOptionalString(data, 'description', 600)
+        && isOptionalString(data, 'certificateUrl', 500)
         && isOptionalString(data, 'focus', 160)
         && isOptionalString(data, 'period', 80)
         && data.sortOrder is number
@@ -150,7 +213,13 @@ service cloud.firestore {
 
     function isValidProject(data) {
       return data.keys().hasAll(['slug', 'title', 'category', 'shortDescription', 'tools', 'galleryImages', 'featured', 'status', 'sortOrder', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['slug', 'title', 'category', 'shortDescription', 'overview', 'objective', 'challenges', 'approach', 'designProcess', 'finalOutput', 'results', 'tools', 'coverImageUrl', 'galleryImages', 'liveUrl', 'sourceUrl', 'featured', 'status', 'sortOrder', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'slug', 'title', 'category', 'shortDescription', 'overview', 'objective',
+          'challenges', 'approach', 'designProcess', 'finalOutput', 'results', 'tools',
+          'coverImageUrl', 'galleryImages', 'liveUrl', 'sourceUrl',
+          'seoTitle', 'seoDescription', 'ogImageUrl',
+          'featured', 'status', 'sortOrder', 'createdAt', 'updatedAt'
+        ])
         && isValidString(data.slug, 2, 120)
         && data.slug.matches('^[a-z0-9\\-]+$')
         && isValidString(data.title, 2, 160)
@@ -168,6 +237,9 @@ service cloud.firestore {
         && isValidStringList(data.galleryImages, 15)
         && isOptionalString(data, 'liveUrl', 500)
         && isOptionalString(data, 'sourceUrl', 500)
+        && isOptionalString(data, 'seoTitle', 160)
+        && isOptionalString(data, 'seoDescription', 320)
+        && isOptionalString(data, 'ogImageUrl', 500)
         && data.featured is bool
         && isValidStatus(data.status)
         && data.sortOrder is number
@@ -177,13 +249,17 @@ service cloud.firestore {
 
     function isValidCertification(data) {
       return data.keys().hasAll(['name', 'organization', 'sortOrder', 'status', 'updatedAt'])
-        && data.keys().hasOnly(['name', 'organization', 'issueDate', 'credentialId', 'imageUrl', 'verificationUrl', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly([
+          'name', 'organization', 'issueDate', 'credentialId',
+          'imageUrl', 'verificationUrl', 'description', 'sortOrder', 'status', 'updatedAt'
+        ])
         && isValidString(data.name, 2, 180)
         && isValidString(data.organization, 2, 180)
         && isOptionalString(data, 'issueDate', 60)
         && isOptionalString(data, 'credentialId', 120)
         && isOptionalString(data, 'imageUrl', 500)
         && isOptionalString(data, 'verificationUrl', 500)
+        && isOptionalString(data, 'description', 600)
         && data.sortOrder is number
         && isValidStatus(data.status)
         && data.updatedAt == request.time;
@@ -191,12 +267,16 @@ service cloud.firestore {
 
     function isValidAchievement(data) {
       return data.keys().hasAll(['title', 'details', 'sortOrder', 'status', 'updatedAt'])
-        && data.keys().hasOnly(['title', 'organization', 'year', 'details', 'category', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly([
+          'title', 'organization', 'year', 'details', 'category',
+          'evidenceImageUrl', 'sortOrder', 'status', 'updatedAt'
+        ])
         && isValidString(data.title, 2, 180)
         && isOptionalString(data, 'organization', 180)
         && isOptionalString(data, 'year', 40)
         && isValidString(data.details, 2, 600)
         && isOptionalString(data, 'category', 80)
+        && isOptionalString(data, 'evidenceImageUrl', 500)
         && data.sortOrder is number
         && isValidStatus(data.status)
         && data.updatedAt == request.time;
@@ -204,14 +284,17 @@ service cloud.firestore {
 
     function isValidTestimonial(data) {
       return data.keys().hasAll(['name', 'quote', 'hasRating', 'sortOrder', 'status', 'updatedAt'])
-        && data.keys().hasOnly(['name', 'position', 'company', 'imageUrl', 'quote', 'rating', 'hasRating', 'sortOrder', 'status', 'updatedAt'])
+        && data.keys().hasOnly([
+          'name', 'position', 'company', 'imageUrl', 'quote',
+          'rating', 'hasRating', 'sortOrder', 'status', 'updatedAt'
+        ])
         && isValidString(data.name, 2, 120)
         && isOptionalString(data, 'position', 120)
         && isOptionalString(data, 'company', 120)
         && isOptionalString(data, 'imageUrl', 500)
         && isValidString(data.quote, 10, 1000)
         && data.hasRating is bool
-        && (!('rating' in data) || (data.rating is number && data.rating >= 1 && data.rating <= 5))
+        && isOptionalNumber(data, 'rating', 1, 5)
         && data.sortOrder is number
         && isValidStatus(data.status)
         && data.updatedAt == request.time;
@@ -250,31 +333,137 @@ service cloud.firestore {
 
     function isValidMediaAsset(data) {
       return data.keys().hasAll(['title', 'url', 'type', 'altText', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['title', 'url', 'type', 'altText', 'mimeType', 'sizeBytes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'title', 'url', 'type', 'altText', 'caption', 'folder',
+          'mimeType', 'sizeBytes', 'createdAt', 'updatedAt'
+        ])
         && isValidString(data.title, 1, 160)
         && isValidString(data.url, 1, 500)
         && data.type is string
         && (data.type == 'image' || data.type == 'video' || data.type == 'document')
         && isValidString(data.altText, 0, 240)
+        && isOptionalString(data, 'caption', 300)
+        && isOptionalString(data, 'folder', 60)
         && isOptionalString(data, 'mimeType', 100)
-        && (!('sizeBytes' in data) || data.sizeBytes is number)
+        && isOptionalNumber(data, 'sizeBytes', 0, 50000000)
         && data.createdAt is timestamp
         && data.updatedAt == request.time;
     }
 
+    function isValidWebsiteSection(data) {
+      return data.keys().hasAll(['title', 'template', 'blocksJson', 'backgroundTone', 'isVisible', 'sortOrder', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'title', 'subtitle', 'description', 'template', 'blocksJson',
+          'backgroundTone', 'isVisible', 'sortOrder', 'status', 'createdAt', 'updatedAt'
+        ])
+        && isValidString(data.title, 2, 160)
+        && isOptionalString(data, 'subtitle', 200)
+        && isOptionalString(data, 'description', 1200)
+        && data.template is string
+        && data.template in ['editorial_text', 'feature_cards', 'stats_grid', 'media_showcase', 'gallery_grid', 'cta_banner', 'list_highlights']
+        && isValidString(data.blocksJson, 2, 24000)
+        && data.backgroundTone is string
+        && data.backgroundTone in ['obsidian', 'charcoal', 'accent']
+        && data.isVisible is bool
+        && data.sortOrder is number
+        && isValidStatus(data.status)
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function isValidNavigationItem(data) {
+      return data.keys().hasAll(['label', 'destination', 'isExternal', 'isVisible', 'sortOrder', 'updatedAt'])
+        && data.keys().hasOnly([
+          'label', 'destination', 'sectionId', 'parentLabel',
+          'isExternal', 'isVisible', 'sortOrder', 'updatedAt'
+        ])
+        && isValidString(data.label, 1, 60)
+        && isValidString(data.destination, 1, 300)
+        && isOptionalString(data, 'sectionId', 80)
+        && isOptionalString(data, 'parentLabel', 60)
+        && data.isExternal is bool
+        && data.isVisible is bool
+        && data.sortOrder is number
+        && data.updatedAt == request.time;
+    }
+
+    function isValidActivityLog(data) {
+      return data.keys().hasAll(['actorEmail', 'action', 'entityType', 'entityId', 'summary', 'createdAt'])
+        && data.keys().hasOnly(['actorEmail', 'action', 'entityType', 'entityId', 'summary', 'createdAt'])
+        && isValidString(data.actorEmail, 3, 180)
+        && data.action is string
+        && data.action in ['login', 'logout', 'create', 'update', 'delete', 'publish', 'unpublish', 'media_upload', 'settings_change', 'restore_version', 'backup_export']
+        && isValidString(data.entityType, 2, 60)
+        && isValidString(data.entityId, 1, 128)
+        && isValidString(data.summary, 2, 400)
+        && data.createdAt == request.time;
+    }
+
+    function isValidContentVersion(data) {
+      return data.keys().hasAll(['entityType', 'entityId', 'label', 'snapshotJson', 'actorEmail', 'createdAt'])
+        && data.keys().hasOnly(['entityType', 'entityId', 'label', 'snapshotJson', 'actorEmail', 'createdAt'])
+        && isValidString(data.entityType, 2, 60)
+        && isValidString(data.entityId, 1, 128)
+        && isValidString(data.label, 2, 180)
+        && isValidString(data.snapshotJson, 2, 40000)
+        && isValidString(data.actorEmail, 3, 180)
+        && data.createdAt == request.time;
+    }
+
     function isValidSiteSettings(data) {
       return data.keys().hasAll(['siteTitle', 'tagline', 'seoDescription', 'marqueeText', 'enable3D', 'enableCustomCursor', 'updatedAt'])
-        && data.keys().hasOnly(['siteTitle', 'tagline', 'seoDescription', 'ogImageUrl', 'showcaseVideoUrl', 'showcasePosterUrl', 'marqueeText', 'accentGoldHex', 'enable3D', 'enableCustomCursor', 'updatedAt'])
+        && data.keys().hasOnly([
+          'siteTitle', 'tagline', 'seoDescription', 'seoKeywords', 'ogTitle', 'ogDescription',
+          'ogImageUrl', 'canonicalUrl', 'robotsMeta', 'pageSeoJson',
+          'showcaseVideoUrl', 'showcasePosterUrl', 'marqueeText', 'accentGoldHex',
+          'primaryBgHex', 'secondaryBgHex', 'textColorHex', 'headingFont', 'bodyFont',
+          'themeMode', 'buttonStyle', 'borderRadiusStyle', 'sectionSpacing',
+          'headerStyle', 'footerStyle', 'heroHeadlineLines', 'heroSubtitle',
+          'heroPrimaryCtaText', 'heroPrimaryCtaLink', 'heroSecondaryCtaText', 'heroSecondaryCtaLink',
+          'heroBackgroundImageUrl', 'showHeroSection', 'heroAnimationIntensity',
+          'enable3D', 'enableCustomCursor', 'contactFormEnabled', 'contactAvailabilityNote',
+          'showAdminFooterLink', 'sessionTimeoutMinutes', 'updatedAt'
+        ])
         && isValidString(data.siteTitle, 2, 120)
         && isValidString(data.tagline, 0, 180)
         && isValidString(data.seoDescription, 0, 320)
+        && isOptionalString(data, 'seoKeywords', 320)
+        && isOptionalString(data, 'ogTitle', 160)
+        && isOptionalString(data, 'ogDescription', 320)
         && isOptionalString(data, 'ogImageUrl', 500)
+        && isOptionalString(data, 'canonicalUrl', 400)
+        && isOptionalString(data, 'robotsMeta', 120)
+        && isOptionalString(data, 'pageSeoJson', 4000)
         && isOptionalString(data, 'showcaseVideoUrl', 500)
         && isOptionalString(data, 'showcasePosterUrl', 500)
         && isValidString(data.marqueeText, 0, 500)
         && isOptionalString(data, 'accentGoldHex', 16)
+        && isOptionalString(data, 'primaryBgHex', 16)
+        && isOptionalString(data, 'secondaryBgHex', 16)
+        && isOptionalString(data, 'textColorHex', 16)
+        && isOptionalString(data, 'headingFont', 20)
+        && isOptionalString(data, 'bodyFont', 20)
+        && isOptionalString(data, 'themeMode', 10)
+        && isOptionalString(data, 'buttonStyle', 20)
+        && isOptionalString(data, 'borderRadiusStyle', 20)
+        && isOptionalString(data, 'sectionSpacing', 20)
+        && isOptionalString(data, 'headerStyle', 20)
+        && isOptionalString(data, 'footerStyle', 20)
+        && isOptionalStringList(data, 'heroHeadlineLines', 6)
+        && isOptionalString(data, 'heroSubtitle', 200)
+        && isOptionalString(data, 'heroPrimaryCtaText', 60)
+        && isOptionalString(data, 'heroPrimaryCtaLink', 300)
+        && isOptionalString(data, 'heroSecondaryCtaText', 60)
+        && isOptionalString(data, 'heroSecondaryCtaLink', 300)
+        && isOptionalString(data, 'heroBackgroundImageUrl', 500)
+        && isOptionalBool(data, 'showHeroSection')
+        && isOptionalString(data, 'heroAnimationIntensity', 20)
         && data.enable3D is bool
         && data.enableCustomCursor is bool
+        && isOptionalBool(data, 'contactFormEnabled')
+        && isOptionalString(data, 'contactAvailabilityNote', 400)
+        && isOptionalBool(data, 'showAdminFooterLink')
+        && isOptionalNumber(data, 'sessionTimeoutMinutes', 5, 1440)
         && data.updatedAt == request.time;
     }
 
@@ -301,7 +490,12 @@ service cloud.firestore {
       allow list: if true;
       allow create: if isValidId(profileId) && isAdmin() && isValidProfile(incoming());
       allow update: if isValidId(profileId) && isAdmin() && isValidProfile(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'headline', 'heroDescription', 'location', 'email', 'phone', 'availability', 'isAvailable', 'profileImageUrl', 'cvUrl', 'cvFilename', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'fullName', 'headline', 'shortIntro', 'aboutSummary', 'tagline', 'careerObjective',
+          'dateOfBirth', 'heroDescription', 'location', 'email', 'phone', 'whatsapp',
+          'googleMapsUrl', 'availability', 'isAvailable', 'profileImageUrl', 'coverImageUrl',
+          'cvUrl', 'cvFilename', 'cvButtonText', 'cvVisible', 'updatedAt'
+        ]);
       allow delete: if isValidId(profileId) && isAdmin();
     }
 
@@ -310,7 +504,10 @@ service cloud.firestore {
       allow list: if true;
       allow create: if isValidId(aboutId) && isAdmin() && isValidAbout(incoming());
       allow update: if isValidId(aboutId) && isAdmin() && isValidAbout(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['introduction', 'background', 'careerObjective', 'interests', 'portraitImageUrl', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'introduction', 'background', 'journey', 'careerObjective',
+          'interests', 'portraitImageUrl', 'additionalBlocksJson', 'updatedAt'
+        ]);
       allow delete: if isValidId(aboutId) && isAdmin();
     }
 
@@ -319,7 +516,10 @@ service cloud.firestore {
       allow list: if isAdmin() || resource.data.status == 'published';
       allow create: if isValidId(serviceId) && isAdmin() && isValidService(incoming());
       allow update: if isValidId(serviceId) && isAdmin() && isValidService(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'deliverables', 'sortOrder', 'status', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'category', 'iconName', 'imageUrl', 'description',
+          'deliverables', 'sortOrder', 'status', 'updatedAt'
+        ]);
       allow delete: if isValidId(serviceId) && isAdmin();
     }
 
@@ -328,7 +528,10 @@ service cloud.firestore {
       allow list: if isAdmin() || resource.data.status == 'published';
       allow create: if isValidId(skillId) && isAdmin() && isValidSkill(incoming());
       allow update: if isValidId(skillId) && isAdmin() && isValidSkill(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'proficiencyLabel', 'level', 'hasLevel', 'sortOrder', 'status', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'category', 'proficiencyLabel', 'description', 'iconUrl',
+          'level', 'hasLevel', 'sortOrder', 'status', 'updatedAt'
+        ]);
       allow delete: if isValidId(skillId) && isAdmin();
     }
 
@@ -346,7 +549,11 @@ service cloud.firestore {
       allow list: if isAdmin() || resource.data.status == 'published';
       allow create: if isValidId(expId) && isAdmin() && isValidExperience(incoming());
       allow update: if isValidId(expId) && isAdmin() && isValidExperience(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['role', 'organization', 'context', 'period', 'description', 'sortOrder', 'status', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'role', 'organization', 'employmentType', 'startDate', 'endDate',
+          'currentlyWorking', 'logoUrl', 'context', 'period', 'description',
+          'sortOrder', 'status', 'updatedAt'
+        ]);
       allow delete: if isValidId(expId) && isAdmin();
     }
 
@@ -355,7 +562,11 @@ service cloud.firestore {
       allow list: if isAdmin() || resource.data.status == 'published';
       allow create: if isValidId(eduId) && isAdmin() && isValidEducation(incoming());
       allow update: if isValidId(eduId) && isAdmin() && isValidEducation(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['degree', 'institution', 'focus', 'period', 'sortOrder', 'status', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'degree', 'institution', 'department', 'focusGroup', 'startYear', 'endYear',
+          'result', 'description', 'certificateUrl', 'focus', 'period',
+          'sortOrder', 'status', 'updatedAt'
+        ]);
       allow delete: if isValidId(eduId) && isAdmin();
     }
 
@@ -374,7 +585,13 @@ service cloud.firestore {
       allow create: if isValidId(projectId) && isAdmin() && isValidProject(incoming()) && incoming().createdAt == request.time;
       allow update: if isValidId(projectId) && isAdmin() && isValidProject(incoming())
         && incoming().createdAt == existing().createdAt
-        && incoming().diff(existing()).affectedKeys().hasOnly(['slug', 'title', 'category', 'shortDescription', 'overview', 'objective', 'challenges', 'approach', 'designProcess', 'finalOutput', 'results', 'tools', 'coverImageUrl', 'galleryImages', 'liveUrl', 'sourceUrl', 'featured', 'status', 'sortOrder', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'slug', 'title', 'category', 'shortDescription', 'overview', 'objective',
+          'challenges', 'approach', 'designProcess', 'finalOutput', 'results', 'tools',
+          'coverImageUrl', 'galleryImages', 'liveUrl', 'sourceUrl',
+          'seoTitle', 'seoDescription', 'ogImageUrl',
+          'featured', 'status', 'sortOrder', 'updatedAt'
+        ]);
       allow delete: if isValidId(projectId) && isAdmin();
     }
 
@@ -383,7 +600,10 @@ service cloud.firestore {
       allow list: if isAdmin() || resource.data.status == 'published';
       allow create: if isValidId(certId) && isAdmin() && isValidCertification(incoming());
       allow update: if isValidId(certId) && isAdmin() && isValidCertification(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'organization', 'issueDate', 'credentialId', 'imageUrl', 'verificationUrl', 'sortOrder', 'status', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'organization', 'issueDate', 'credentialId',
+          'imageUrl', 'verificationUrl', 'description', 'sortOrder', 'status', 'updatedAt'
+        ]);
       allow delete: if isValidId(certId) && isAdmin();
     }
 
@@ -392,7 +612,10 @@ service cloud.firestore {
       allow list: if isAdmin() || resource.data.status == 'published';
       allow create: if isValidId(achId) && isAdmin() && isValidAchievement(incoming());
       allow update: if isValidId(achId) && isAdmin() && isValidAchievement(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'organization', 'year', 'details', 'category', 'sortOrder', 'status', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'organization', 'year', 'details', 'category',
+          'evidenceImageUrl', 'sortOrder', 'status', 'updatedAt'
+        ]);
       allow delete: if isValidId(achId) && isAdmin();
     }
 
@@ -401,7 +624,10 @@ service cloud.firestore {
       allow list: if isAdmin() || resource.data.status == 'published';
       allow create: if isValidId(testId) && isAdmin() && isValidTestimonial(incoming());
       allow update: if isValidId(testId) && isAdmin() && isValidTestimonial(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'position', 'company', 'imageUrl', 'quote', 'rating', 'hasRating', 'sortOrder', 'status', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'position', 'company', 'imageUrl', 'quote',
+          'rating', 'hasRating', 'sortOrder', 'status', 'updatedAt'
+        ]);
       allow delete: if isValidId(testId) && isAdmin();
     }
 
@@ -434,8 +660,52 @@ service cloud.firestore {
       allow create: if isValidId(assetId) && isAdmin() && isValidMediaAsset(incoming()) && incoming().createdAt == request.time;
       allow update: if isValidId(assetId) && isAdmin() && isValidMediaAsset(incoming())
         && incoming().createdAt == existing().createdAt
-        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'url', 'type', 'altText', 'mimeType', 'sizeBytes', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'url', 'type', 'altText', 'caption', 'folder',
+          'mimeType', 'sizeBytes', 'updatedAt'
+        ]);
       allow delete: if isValidId(assetId) && isAdmin();
+    }
+
+    match /website_sections/{sectionId} {
+      allow get: if isValidId(sectionId) && (isAdmin() || existing().status == 'published');
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(sectionId) && isAdmin() && isValidWebsiteSection(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(sectionId) && isAdmin() && isValidWebsiteSection(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'subtitle', 'description', 'template', 'blocksJson',
+          'backgroundTone', 'isVisible', 'sortOrder', 'status', 'updatedAt'
+        ]);
+      allow delete: if isValidId(sectionId) && isAdmin();
+    }
+
+    match /navigation_items/{navId} {
+      allow get: if isValidId(navId);
+      allow list: if true;
+      allow create: if isValidId(navId) && isAdmin() && isValidNavigationItem(incoming());
+      allow update: if isValidId(navId) && isAdmin() && isValidNavigationItem(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'label', 'destination', 'sectionId', 'parentLabel',
+          'isExternal', 'isVisible', 'sortOrder', 'updatedAt'
+        ]);
+      allow delete: if isValidId(navId) && isAdmin();
+    }
+
+    match /activity_logs/{logId} {
+      allow get: if isValidId(logId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(logId) && isAdmin() && isValidActivityLog(incoming()) && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(logId) && isAdmin();
+    }
+
+    match /content_versions/{versionId} {
+      allow get: if isValidId(versionId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(versionId) && isAdmin() && isValidContentVersion(incoming()) && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(versionId) && isAdmin();
     }
 
     match /site_settings/{settingId} {
@@ -443,7 +713,18 @@ service cloud.firestore {
       allow list: if true;
       allow create: if isValidId(settingId) && isAdmin() && isValidSiteSettings(incoming());
       allow update: if isValidId(settingId) && isAdmin() && isValidSiteSettings(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['siteTitle', 'tagline', 'seoDescription', 'ogImageUrl', 'showcaseVideoUrl', 'showcasePosterUrl', 'marqueeText', 'accentGoldHex', 'enable3D', 'enableCustomCursor', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'siteTitle', 'tagline', 'seoDescription', 'seoKeywords', 'ogTitle', 'ogDescription',
+          'ogImageUrl', 'canonicalUrl', 'robotsMeta', 'pageSeoJson',
+          'showcaseVideoUrl', 'showcasePosterUrl', 'marqueeText', 'accentGoldHex',
+          'primaryBgHex', 'secondaryBgHex', 'textColorHex', 'headingFont', 'bodyFont',
+          'themeMode', 'buttonStyle', 'borderRadiusStyle', 'sectionSpacing',
+          'headerStyle', 'footerStyle', 'heroHeadlineLines', 'heroSubtitle',
+          'heroPrimaryCtaText', 'heroPrimaryCtaLink', 'heroSecondaryCtaText', 'heroSecondaryCtaLink',
+          'heroBackgroundImageUrl', 'showHeroSection', 'heroAnimationIntensity',
+          'enable3D', 'enableCustomCursor', 'contactFormEnabled', 'contactAvailabilityNote',
+          'showAdminFooterLink', 'sessionTimeoutMinutes', 'updatedAt'
+        ]);
       allow delete: if isValidId(settingId) && isAdmin();
     }
   }

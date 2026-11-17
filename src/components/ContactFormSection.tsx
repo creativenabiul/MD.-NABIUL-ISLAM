@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CheckCircle2, AlertCircle, Mail, MapPin, Phone } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Mail, MapPin, Phone, MessageCircle, ExternalLink } from 'lucide-react';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import type { ProfileData, SocialLinkItem } from '../types/portfolio';
+import { usePortfolio } from '../context/PortfolioContext';
+import type { ProfileData, SiteSettingsData, SocialLinkItem } from '../types/portfolio';
 import { MagneticButton } from './MagneticButton';
 import { SectionHeading } from './KineticTypography';
 
@@ -22,9 +23,16 @@ type ContactFormValues = z.infer<typeof contactFormSchema>;
 interface ContactFormSectionProps {
   profile: ProfileData;
   socialLinks: SocialLinkItem[];
+  settings?: SiteSettingsData;
 }
 
-export function ContactFormSection({ profile, socialLinks }: ContactFormSectionProps) {
+export function ContactFormSection({ profile, socialLinks, settings }: ContactFormSectionProps) {
+  const { data } = usePortfolio();
+  const resolvedSettings = settings ?? data.settings;
+  const formEnabled = resolvedSettings.contactFormEnabled ?? true;
+  const availabilityNote = resolvedSettings.contactAvailabilityNote;
+  const whatsappDigits = (profile.whatsapp || '').replace(/[^\d+]/g, '');
+
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
@@ -80,14 +88,14 @@ export function ContactFormSection({ profile, socialLinks }: ContactFormSectionP
         reset();
         return;
       }
-      const data = await resp.json();
-      if (!resp.ok || !data.ok) {
+      const resData = await resp.json();
+      if (!resp.ok || !resData.ok) {
         setSubmitState('error');
-        setFeedbackMsg(data.message || 'Unable to send your inquiry right now. Please try again.');
+        setFeedbackMsg(resData.message || 'Unable to send your inquiry right now. Please try again.');
         return;
       }
       setSubmitState('success');
-      setFeedbackMsg(data.message || 'Thank you. Your inquiry has been received.');
+      setFeedbackMsg(resData.message || 'Thank you. Your inquiry has been received.');
       reset();
     } catch {
       try {
@@ -113,9 +121,14 @@ export function ContactFormSection({ profile, socialLinks }: ContactFormSectionP
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         {/* Left Details */}
         <div className="lg:col-span-5 space-y-8">
-          <p className="text-base text-[#F5F2EB]/85 leading-relaxed">
-            I&apos;m open to freelance design projects, creative collaborations, and professional opportunities. Let&apos;s discuss how we can turn your ideas into something impactful.
-          </p>
+          <div className="space-y-2.5">
+            <p className="text-base text-[#F5F2EB]/85 leading-relaxed">
+              I&apos;m open to freelance design projects, creative collaborations, and professional opportunities. Let&apos;s discuss how we can turn your ideas into something impactful.
+            </p>
+            {availabilityNote && (
+              <p className="text-xs font-medium text-[#D4B475]">{availabilityNote}</p>
+            )}
+          </div>
 
           <div className="space-y-4 pt-4 border-t border-white/10">
             <a
@@ -140,11 +153,37 @@ export function ContactFormSection({ profile, socialLinks }: ContactFormSectionP
               </div>
             </a>
 
+            {whatsappDigits && (
+              <a
+                href={`https://wa.me/${whatsappDigits.replace(/^\+/, '')}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="flex items-start gap-3.5 text-sm text-[#F5F2EB]/90 hover:text-[#D4B475] transition-colors"
+              >
+                <MessageCircle className="w-4 h-4 text-[#D4B475] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-[#8C8A84]">WhatsApp</p>
+                  <p className="mt-0.5 font-medium tabular-nums">{profile.whatsapp}</p>
+                </div>
+              </a>
+            )}
+
             <div className="flex items-start gap-3.5 text-sm text-[#F5F2EB]/90">
               <MapPin className="w-4 h-4 text-[#D4B475] mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs text-[#8C8A84]">Location</p>
                 <p className="mt-0.5 font-medium">{profile.location}</p>
+                {profile.googleMapsUrl && /^https?:\/\//i.test(profile.googleMapsUrl) && (
+                  <a
+                    href={profile.googleMapsUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-center gap-1 text-xs text-[#D4B475] hover:underline mt-1"
+                  >
+                    View on Google Maps
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -171,7 +210,30 @@ export function ContactFormSection({ profile, socialLinks }: ContactFormSectionP
 
         {/* Right Form */}
         <div className="lg:col-span-7 p-6 sm:p-8 rounded-2xl bg-[#111114] border border-white/10">
-          {submitState === 'success' ? (
+          {!formEnabled ? (
+            <div className="py-12 text-center space-y-4">
+              <Mail className="w-10 h-10 text-[#D4B475] mx-auto" />
+              <h3 className="font-serif text-2xl font-semibold text-[#F5F2EB]">
+                Direct Inquiries Open
+              </h3>
+              <p className="text-sm text-[#8C8A84] max-w-md mx-auto">
+                {availabilityNote || 'Please reach out directly via email or phone to discuss your project.'}
+              </p>
+              <div className="pt-2 flex flex-wrap justify-center gap-3">
+                <MagneticButton href={`mailto:${profile.email}`} variant="primary">
+                  Email {profile.email}
+                </MagneticButton>
+                {whatsappDigits && (
+                  <MagneticButton
+                    href={`https://wa.me/${whatsappDigits.replace(/^\+/, '')}`}
+                    variant="secondary"
+                  >
+                    Message on WhatsApp
+                  </MagneticButton>
+                )}
+              </div>
+            </div>
+          ) : submitState === 'success' ? (
             <div className="py-12 text-center space-y-4">
               <CheckCircle2 className="w-12 h-12 text-[#D4B475] mx-auto" />
               <h3 className="font-serif text-2xl font-semibold text-[#F5F2EB]">

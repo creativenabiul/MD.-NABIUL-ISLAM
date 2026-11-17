@@ -16,6 +16,7 @@ import { TestimonialCarousel } from '../components/TestimonialCarousel';
 import { ContactFormSection } from '../components/ContactFormSection';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
+import { DynamicSectionRenderer } from '../components/DynamicSectionRenderer';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const LazyHeroCanvas = lazy(() =>
@@ -65,133 +66,166 @@ export function HomePage() {
   }, [projects, selectedCategory]);
 
   const headlineLines = useMemo(() => {
+    if (settings.heroHeadlineLines && settings.heroHeadlineLines.length > 0) {
+      return settings.heroHeadlineLines;
+    }
     return ['Designing Brands.', 'Scaling Strategy.', 'Automating Impact.'];
-  }, []);
+  }, [settings.heroHeadlineLines]);
+
+  const sectionPadClass =
+    settings.sectionSpacing === 'compact'
+      ? 'py-14 lg:py-20'
+      : settings.sectionSpacing === 'airy'
+      ? 'py-24 lg:py-36'
+      : 'py-20 lg:py-28';
+
+  const primaryCtaText = settings.heroPrimaryCtaText || 'Explore My Work';
+  const primaryCtaLink = settings.heroPrimaryCtaLink || '#projects';
+  const secondaryCtaText = settings.heroSecondaryCtaText || 'Contact Me';
+  const secondaryCtaLink = settings.heroSecondaryCtaLink || '/contact';
+  const isExternalOrHash = (url: string) =>
+    url.startsWith('#') || /^https?:\/\//i.test(url) || /^mailto:/i.test(url) || /^tel:/i.test(url);
 
   return (
     <div className="min-h-screen bg-[#070708] text-[#F5F2EB]">
       <Navbar brandName={profile.fullName} />
 
       {/* A. HERO SECTION WITH 3D CANVAS */}
-      <section
-        id="hero"
-        className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden"
-      >
-        {/* 3D Interactive Scene Backdrop */}
-        <div className="absolute inset-0 z-0">
-          <ErrorBoundary fallback={<div className="w-full h-full bg-[#070708]" />}>
-            <Suspense
-              fallback={
-                <div className="w-full h-full bg-[#070708]" />
-              }
-            >
-              <LazyHeroCanvas enabled={settings.enable3D} />
-            </Suspense>
-          </ErrorBoundary>
-          {/* Contrast scrim for left-column typography legibility */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-gradient-to-r from-[#070708]/92 via-[#070708]/68 to-transparent pointer-events-none"
-          />
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#070708] to-transparent pointer-events-none"
-          />
-        </div>
+      {settings.showHeroSection !== false ? (
+        <section
+          id="hero"
+          className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden"
+        >
+          {/* 3D Interactive Scene Backdrop */}
+          <div className="absolute inset-0 z-0">
+            {settings.heroBackgroundImageUrl && (
+              <img
+                src={settings.heroBackgroundImageUrl}
+                alt=""
+                aria-hidden="true"
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+              />
+            )}
+            <ErrorBoundary fallback={<div className="w-full h-full bg-[#070708]" />}>
+              <Suspense fallback={<div className="w-full h-full bg-[#070708]" />}>
+                <LazyHeroCanvas enabled={settings.enable3D} />
+              </Suspense>
+            </ErrorBoundary>
+            {/* Contrast scrim for left-column typography legibility */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-r from-[#070708]/92 via-[#070708]/68 to-transparent pointer-events-none"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#070708] to-transparent pointer-events-none"
+            />
+          </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            <div className="lg:col-span-7 space-y-6">
-              {profile.isAvailable && (
-                <p className="text-xs font-medium tracking-[0.2em] uppercase text-[#D4B475]">
-                  {profile.availability}
-                </p>
-              )}
-
-              <div>
-                <p className="text-sm sm:text-base font-medium text-[#E8D2A0] mb-3">
-                  {profile.fullName} · {profile.headline}
-                </p>
-                <HeroKineticHeadline
-                  lines={headlineLines}
-                  className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-[4.25rem] font-semibold tracking-tight text-[#F5F2EB] leading-[1.06]"
-                />
-              </div>
-
-              <p className="text-base sm:text-lg text-[#F5F2EB]/80 leading-relaxed max-w-2xl">
-                {profile.heroDescription}
-              </p>
-
-              <div className="pt-2 flex flex-wrap items-center gap-4">
-                <MagneticButton
-                  href="#projects"
-                  variant="primary"
-                  cursorLabel="EXPLORE"
-                >
-                  Explore My Work
-                </MagneticButton>
-
-                <MagneticButton
-                  to="/contact"
-                  variant="secondary"
-                  cursorLabel="CONTACT"
-                >
-                  Contact Me
-                </MagneticButton>
-
-                {profile.cvUrl && (
-                  <a
-                    href={profile.cvUrl}
-                    download={profile.cvFilename || 'Md_Nabiul_Islam_CV.pdf'}
-                    className="inline-flex items-center gap-2 px-4 py-3 text-sm font-medium text-[#D4B475] hover:text-[#E8D2A0] transition-colors whitespace-nowrap shrink-0"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download CV
-                  </a>
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+              <div className="lg:col-span-7 space-y-6">
+                {profile.isAvailable && (
+                  <p className="text-xs font-medium tracking-[0.2em] uppercase text-[#D4B475]">
+                    {profile.availability}
+                  </p>
                 )}
-              </div>
 
-              <div className="pt-4 text-xs text-[#8C8A84] flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span>{profile.location}</span>
-                <span aria-hidden="true">·</span>
-                <span>{profile.email}</span>
-              </div>
-            </div>
+                <div>
+                  {settings.heroSubtitle && (
+                    <p className="text-xs font-mono tracking-[0.18em] uppercase text-[#D4B475] mb-1.5">
+                      {settings.heroSubtitle}
+                    </p>
+                  )}
+                  <p className="text-sm sm:text-base font-medium text-[#E8D2A0] mb-3">
+                    {profile.fullName} · {profile.headline}
+                  </p>
+                  <HeroKineticHeadline
+                    lines={headlineLines}
+                    className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-[4.25rem] font-semibold tracking-tight text-[#F5F2EB] leading-[1.06]"
+                  />
+                </div>
 
-            {/* Right Column: Subtle Editorial Portrait Card positioned cleanly without occluding 3D typography */}
-            <div className="lg:col-span-5 flex lg:justify-end">
-              <div className="relative w-full max-w-[320px] sm:max-w-[340px] rounded-2xl overflow-hidden border border-white/15 bg-[#111114]/80 backdrop-blur-sm">
-                <div className="aspect-[3/4] w-full overflow-hidden bg-[#141418]">
-                  {profile.profileImageUrl && !portraitFailed ? (
-                    <img
-                      src={profile.profileImageUrl}
-                      alt={profile.fullName}
-                      referrerPolicy="no-referrer"
-                      onError={() => setPortraitFailed(true)}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center font-serif text-4xl text-[#D4B475]">
-                      NI
-                    </div>
+                <p className="text-base sm:text-lg text-[#F5F2EB]/80 leading-relaxed max-w-2xl">
+                  {profile.heroDescription}
+                </p>
+
+                <div className="pt-2 flex flex-wrap items-center gap-4">
+                  <MagneticButton
+                    href={isExternalOrHash(primaryCtaLink) ? primaryCtaLink : undefined}
+                    to={!isExternalOrHash(primaryCtaLink) ? primaryCtaLink : undefined}
+                    variant="primary"
+                    cursorLabel="EXPLORE"
+                  >
+                    {primaryCtaText}
+                  </MagneticButton>
+
+                  <MagneticButton
+                    href={isExternalOrHash(secondaryCtaLink) ? secondaryCtaLink : undefined}
+                    to={!isExternalOrHash(secondaryCtaLink) ? secondaryCtaLink : undefined}
+                    variant="secondary"
+                    cursorLabel="CONTACT"
+                  >
+                    {secondaryCtaText}
+                  </MagneticButton>
+
+                  {profile.cvUrl && profile.cvVisible !== false && (
+                    <a
+                      href={profile.cvUrl}
+                      download={profile.cvFilename || 'Md_Nabiul_Islam_CV.pdf'}
+                      className="inline-flex items-center gap-2 px-4 py-3 text-sm font-medium text-[#D4B475] hover:text-[#E8D2A0] transition-colors whitespace-nowrap shrink-0"
+                    >
+                      <Download className="w-4 h-4" />
+                      {profile.cvButtonText || 'Download CV'}
+                    </a>
                   )}
                 </div>
-                <div className="p-4 border-t border-white/10 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-serif text-lg font-semibold text-[#F5F2EB]">
-                      {profile.fullName}
-                    </p>
-                    <p className="text-xs text-[#8C8A84]">Gaibandha, Bangladesh</p>
+
+                <div className="pt-4 text-xs text-[#8C8A84] flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span>{profile.location}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{profile.email}</span>
+                </div>
+              </div>
+
+              {/* Right Column: Subtle Editorial Portrait Card positioned cleanly without occluding 3D typography */}
+              <div className="lg:col-span-5 flex lg:justify-end">
+                <div className="relative w-full max-w-[320px] sm:max-w-[340px] rounded-2xl overflow-hidden border border-white/15 bg-[#111114]/80 backdrop-blur-sm">
+                  <div className="aspect-[3/4] w-full overflow-hidden bg-[#141418]">
+                    {profile.profileImageUrl && !portraitFailed ? (
+                      <img
+                        src={profile.profileImageUrl}
+                        alt={profile.fullName}
+                        referrerPolicy="no-referrer"
+                        onError={() => setPortraitFailed(true)}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-serif text-4xl text-[#D4B475]">
+                        NI
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[11px] font-mono text-[#D4B475] whitespace-nowrap">
-                    B.Sc Chemistry
-                  </span>
+                  <div className="p-4 border-t border-white/10 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-serif text-lg font-semibold text-[#F5F2EB]">
+                        {profile.fullName}
+                      </p>
+                      <p className="text-xs text-[#8C8A84]">Gaibandha, Bangladesh</p>
+                    </div>
+                    <span className="text-[11px] font-mono text-[#D4B475] whitespace-nowrap">
+                      B.Sc Chemistry
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <div className="pt-20" />
+      )}
 
       {/* MARQUEE WITH SCROLL-VELOCITY SKEW */}
       <SkillsMarquee text={settings.marqueeText} />
@@ -215,7 +249,7 @@ export function HomePage() {
       )}
 
       {/* B. ABOUT SECTION */}
-      <section id="about" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section id="about" className={`${sectionPadClass} px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto`}>
         <SectionHeading
           kicker="Background & Philosophy"
           title="Creativity Rooted in"
@@ -244,6 +278,11 @@ export function HomePage() {
               <p className="text-base text-[#F5F2EB]/75 leading-relaxed">
                 {about.background}
               </p>
+              {about.journey && (
+                <p className="text-base text-[#F5F2EB]/75 leading-relaxed">
+                  {about.journey}
+                </p>
+              )}
               <p className="text-base text-[#D4B475] font-medium leading-relaxed">
                 {about.careerObjective}
               </p>
@@ -259,14 +298,14 @@ export function HomePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
-              {profile.cvUrl && (
+              {profile.cvUrl && profile.cvVisible !== false && (
                 <MagneticButton
                   href={profile.cvUrl}
                   download={profile.cvFilename || 'Md_Nabiul_Islam_CV.pdf'}
                   variant="primary"
                   cursorLabel="PDF"
                 >
-                  Download Full CV
+                  {profile.cvButtonText || 'Download Full CV'}
                 </MagneticButton>
               )}
               <Link
@@ -281,7 +320,7 @@ export function HomePage() {
       </section>
 
       {/* C. SERVICES SECTION */}
-      <section id="services" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10">
+      <section id="services" className={`${sectionPadClass} px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10`}>
         <SectionHeading
           kicker="Capabilities"
           title="Services & Creative"
@@ -295,9 +334,20 @@ export function HomePage() {
               className="p-7 rounded-2xl bg-[#111114] border border-white/10 hover:border-[#D4B475]/45 transition-colors flex flex-col justify-between gap-6"
             >
               <div>
-                <p className="text-xs font-mono tabular-nums text-[#D4B475]">
-                  {String(idx + 1).padStart(2, '0')}.
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-mono tabular-nums text-[#D4B475]">
+                    {String(idx + 1).padStart(2, '0')}.
+                  </p>
+                  {service.imageUrl && (
+                    <img
+                      src={service.imageUrl}
+                      alt={service.title}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="w-8 h-8 rounded-lg object-cover border border-white/15"
+                    />
+                  )}
+                </div>
                 <h3 className="mt-2 font-serif text-2xl font-semibold text-[#F5F2EB]">
                   {service.title}
                 </h3>
@@ -491,6 +541,9 @@ export function HomePage() {
                     {edu.degree}
                   </h3>
                   <p className="text-sm text-[#8C8A84]">{edu.institution}</p>
+                  {edu.result && (
+                    <p className="mt-1 text-xs font-mono text-[#E8D2A0]/85">{edu.result}</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -500,7 +553,7 @@ export function HomePage() {
 
       {/* I & J. CERTIFICATIONS & ACHIEVEMENTS */}
       {(certifications.length > 0 || achievements.length > 0) && (
-        <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10">
+        <section className={`${sectionPadClass} px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10`}>
           <SectionHeading
             kicker="Credentials & Recognition"
             title="Certifications &"
@@ -545,6 +598,17 @@ export function HomePage() {
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     )}
+                    {cert.imageUrl && (
+                      <a
+                        href={cert.imageUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#E8D2A0] hover:underline pt-1 ml-4"
+                      >
+                        View Certificate
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
@@ -577,6 +641,17 @@ export function HomePage() {
                       <p className="text-xs text-[#E8D2A0]/80">{ach.organization}</p>
                     )}
                     <p className="text-sm text-[#8C8A84] leading-relaxed">{ach.details}</p>
+                    {ach.evidenceImageUrl && (
+                      <a
+                        href={ach.evidenceImageUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#D4B475] hover:underline pt-1"
+                      >
+                        View Evidence
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
@@ -585,11 +660,14 @@ export function HomePage() {
         </section>
       )}
 
+      {/* CUSTOM DYNAMIC SECTIONS FROM ADMIN SECTION BUILDER */}
+      <DynamicSectionRenderer sections={data.websiteSections} spacing={settings.sectionSpacing} />
+
       {/* K. TESTIMONIALS (Automatically hidden when none are published) */}
       <TestimonialCarousel testimonials={testimonials} />
 
       {/* L. CONTACT SECTION */}
-      <ContactFormSection profile={profile} socialLinks={socialLinks} />
+      <ContactFormSection profile={profile} socialLinks={socialLinks} settings={settings} />
 
       {/* M. FOOTER */}
       <Footer profile={profile} socialLinks={socialLinks} tagline={settings.tagline} />

@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   serverTimestamp,
@@ -19,6 +20,7 @@ import {
   DEFAULT_CERTIFICATIONS,
   DEFAULT_EDUCATION,
   DEFAULT_EXPERIENCES,
+  DEFAULT_NAVIGATION_ITEMS,
   DEFAULT_PORTFOLIO_BUNDLE,
   DEFAULT_PROFILE,
   DEFAULT_PROJECTS,
@@ -27,15 +29,19 @@ import {
   DEFAULT_SKILLS,
   DEFAULT_SOCIAL_LINKS,
   DEFAULT_STATISTICS,
+  DEFAULT_WEBSITE_SECTIONS,
 } from '../data/seedDefaults';
 import type {
   AboutData,
   AchievementItem,
+  ActivityLogItem,
   CertificationItem,
   ContactMessageItem,
+  ContentVersionItem,
   EducationItem,
   ExperienceItem,
   MediaAssetItem,
+  NavigationItem,
   PortfolioBundle,
   ProfileData,
   ProjectCategoryItem,
@@ -46,6 +52,7 @@ import type {
   SocialLinkItem,
   StatisticItem,
   TestimonialItem,
+  WebsiteSectionItem,
 } from '../types/portfolio';
 import { normalizePortfolioBundle, normalizeProject } from './assetUrl';
 import { db, handleFirestoreError, OperationType } from './firebase';
@@ -62,7 +69,6 @@ async function fetchPublishedCollection<T extends { id: string; sortOrder?: numb
     const q = query(collection(db, colName), where('status', '==', 'published'));
     const snap = await getDocs(q);
     if (snap.empty) {
-      // Check if any doc exists at all? We cannot list drafts publicly, so if empty return fallback
       return sortByOrder(fallback);
     }
     const items = snap.docs.map((d) => ({ ...(d.data() as T), id: d.id }));
@@ -93,6 +99,7 @@ export async function fetchPublicPortfolio(): Promise<PortfolioBundle> {
       settingsSnap,
       categoriesSnap,
       socialSnap,
+      navSnap,
       services,
       skills,
       statistics,
@@ -102,12 +109,14 @@ export async function fetchPublicPortfolio(): Promise<PortfolioBundle> {
       certifications,
       achievements,
       testimonials,
+      websiteSections,
     ] = await Promise.all([
       getDoc(doc(db, 'profiles', 'main')).catch(() => null),
       getDoc(doc(db, 'about_sections', 'main')).catch(() => null),
       getDoc(doc(db, 'site_settings', 'main')).catch(() => null),
       getDocs(collection(db, 'project_categories')).catch(() => null),
       getDocs(collection(db, 'social_links')).catch(() => null),
+      getDocs(collection(db, 'navigation_items')).catch(() => null),
       fetchPublishedCollection<ServiceItem>('services', DEFAULT_SERVICES),
       fetchPublishedCollection<SkillItem>('skills', DEFAULT_SKILLS),
       fetchPublishedCollection<StatisticItem>('statistics', DEFAULT_STATISTICS),
@@ -117,21 +126,22 @@ export async function fetchPublicPortfolio(): Promise<PortfolioBundle> {
       fetchPublishedCollection<CertificationItem>('certifications', DEFAULT_CERTIFICATIONS),
       fetchPublishedCollection<AchievementItem>('achievements', DEFAULT_ACHIEVEMENTS),
       fetchPublishedCollection<TestimonialItem>('testimonials', []),
+      fetchPublishedCollection<WebsiteSectionItem>('website_sections', DEFAULT_WEBSITE_SECTIONS),
     ]);
 
     const profile: ProfileData =
       profileSnap && profileSnap.exists()
-        ? { ...(profileSnap.data() as ProfileData), id: profileSnap.id }
+        ? { ...DEFAULT_PROFILE, ...(profileSnap.data() as ProfileData), id: profileSnap.id }
         : DEFAULT_PROFILE;
 
     const about: AboutData =
       aboutSnap && aboutSnap.exists()
-        ? { ...(aboutSnap.data() as AboutData), id: aboutSnap.id }
+        ? { ...DEFAULT_ABOUT, ...(aboutSnap.data() as AboutData), id: aboutSnap.id }
         : DEFAULT_ABOUT;
 
     const settings: SiteSettingsData =
       settingsSnap && settingsSnap.exists()
-        ? { ...(settingsSnap.data() as SiteSettingsData), id: settingsSnap.id }
+        ? { ...DEFAULT_SETTINGS, ...(settingsSnap.data() as SiteSettingsData), id: settingsSnap.id }
         : DEFAULT_SETTINGS;
 
     const categories: ProjectCategoryItem[] =
@@ -143,6 +153,11 @@ export async function fetchPublicPortfolio(): Promise<PortfolioBundle> {
       socialSnap && !socialSnap.empty
         ? sortByOrder(socialSnap.docs.map((d) => ({ ...(d.data() as SocialLinkItem), id: d.id })))
         : sortByOrder(DEFAULT_SOCIAL_LINKS);
+
+    const navigationItems: NavigationItem[] =
+      navSnap && !navSnap.empty
+        ? sortByOrder(navSnap.docs.map((d) => ({ ...(d.data() as NavigationItem), id: d.id })))
+        : sortByOrder(DEFAULT_NAVIGATION_ITEMS);
 
     return normalizePortfolioBundle({
       profile,
@@ -158,6 +173,8 @@ export async function fetchPublicPortfolio(): Promise<PortfolioBundle> {
       achievements,
       testimonials,
       socialLinks,
+      websiteSections: websiteSections.filter((s) => s.isVisible),
+      navigationItems,
       settings,
     });
   } catch (error) {
@@ -198,11 +215,23 @@ export async function ensureAdminSeeded(uid: string, email: string): Promise<voi
       });
     }
 
+    const ts = serverTimestamp();
+
+    // Ensure navigation_items exist even on upgraded databases
+    const navSnap = await getDocs(query(collection(db, 'navigation_items'), limit(1)));
+    if (navSnap.empty) {
+      const navBatch = writeBatch(db);
+      for (const nav of DEFAULT_NAVIGATION_ITEMS) {
+        const { id, ...rest } = nav;
+        navBatch.set(doc(db, 'navigation_items', id), { ...rest, updatedAt: ts });
+      }
+      await navBatch.commit();
+    }
+
     const profileSnap = await getDoc(doc(db, 'profiles', 'main'));
     if (profileSnap.exists()) return;
 
     const batch = writeBatch(db);
-    const ts = serverTimestamp();
 
     const { id: _pId, ...profileBody } = DEFAULT_PROFILE;
     batch.set(doc(db, 'profiles', 'main'), { ...profileBody, updatedAt: ts });
@@ -260,7 +289,30 @@ export async function ensureAdminSeeded(uid: string, email: string): Promise<voi
   }
 }
 
-export async function fetchAdminAllData() {
+export interface AdminAllData {
+  profile: ProfileData;
+  about: AboutData;
+  settings: SiteSettingsData;
+  services: ServiceItem[];
+  skills: SkillItem[];
+  statistics: StatisticItem[];
+  experiences: ExperienceItem[];
+  education: EducationItem[];
+  categories: ProjectCategoryItem[];
+  projects: ProjectItem[];
+  certifications: CertificationItem[];
+  achievements: AchievementItem[];
+  testimonials: TestimonialItem[];
+  socialLinks: SocialLinkItem[];
+  websiteSections: WebsiteSectionItem[];
+  navigationItems: NavigationItem[];
+  messages: ContactMessageItem[];
+  media: MediaAssetItem[];
+  activityLogs: ActivityLogItem[];
+  contentVersions: ContentVersionItem[];
+}
+
+export async function fetchAdminAllData(): Promise<AdminAllData> {
   const [
     profileSnap,
     aboutSnap,
@@ -276,8 +328,12 @@ export async function fetchAdminAllData() {
     achievements,
     testimonials,
     socialLinks,
+    websiteSections,
+    navigationItems,
     messagesSnap,
     mediaSnap,
+    logsSnap,
+    versionsSnap,
   ] = await Promise.all([
     getDoc(doc(db, 'profiles', 'main')),
     getDoc(doc(db, 'about_sections', 'main')),
@@ -293,12 +349,16 @@ export async function fetchAdminAllData() {
     fetchAllCollection<AchievementItem>('achievements'),
     fetchAllCollection<TestimonialItem>('testimonials'),
     fetchAllCollection<SocialLinkItem>('social_links'),
+    fetchAllCollection<WebsiteSectionItem>('website_sections'),
+    fetchAllCollection<NavigationItem>('navigation_items'),
     getDocs(query(collection(db, 'contact_messages'), orderBy('createdAt', 'desc'))).catch((err) =>
       handleFirestoreError(err, OperationType.LIST, 'contact_messages')
     ),
     getDocs(query(collection(db, 'media_assets'), orderBy('createdAt', 'desc'))).catch((err) =>
       handleFirestoreError(err, OperationType.LIST, 'media_assets')
     ),
+    getDocs(query(collection(db, 'activity_logs'), orderBy('createdAt', 'desc'), limit(120))).catch(() => null),
+    getDocs(query(collection(db, 'content_versions'), orderBy('createdAt', 'desc'), limit(40))).catch(() => null),
   ]);
 
   const messages = messagesSnap.docs.map((d) => ({
@@ -311,15 +371,23 @@ export async function fetchAdminAllData() {
     id: d.id,
   }));
 
+  const activityLogs = logsSnap
+    ? logsSnap.docs.map((d) => ({ ...(d.data() as ActivityLogItem), id: d.id }))
+    : [];
+
+  const contentVersions = versionsSnap
+    ? versionsSnap.docs.map((d) => ({ ...(d.data() as ContentVersionItem), id: d.id }))
+    : [];
+
   return {
     profile: profileSnap.exists()
-      ? ({ ...(profileSnap.data() as ProfileData), id: profileSnap.id } as ProfileData)
+      ? ({ ...DEFAULT_PROFILE, ...(profileSnap.data() as ProfileData), id: profileSnap.id } as ProfileData)
       : DEFAULT_PROFILE,
     about: aboutSnap.exists()
-      ? ({ ...(aboutSnap.data() as AboutData), id: aboutSnap.id } as AboutData)
+      ? ({ ...DEFAULT_ABOUT, ...(aboutSnap.data() as AboutData), id: aboutSnap.id } as AboutData)
       : DEFAULT_ABOUT,
     settings: settingsSnap.exists()
-      ? ({ ...(settingsSnap.data() as SiteSettingsData), id: settingsSnap.id } as SiteSettingsData)
+      ? ({ ...DEFAULT_SETTINGS, ...(settingsSnap.data() as SiteSettingsData), id: settingsSnap.id } as SiteSettingsData)
       : DEFAULT_SETTINGS,
     services,
     skills,
@@ -332,8 +400,12 @@ export async function fetchAdminAllData() {
     achievements,
     testimonials,
     socialLinks,
+    websiteSections,
+    navigationItems,
     messages,
     media,
+    activityLogs,
+    contentVersions,
   };
 }
 
@@ -347,6 +419,11 @@ export async function saveDocument(
   try {
     const cleanPayload: Record<string, unknown> = { ...payload };
     delete cleanPayload.id;
+    Object.keys(cleanPayload).forEach((k) => {
+      if (cleanPayload[k] === undefined) {
+        delete cleanPayload[k];
+      }
+    });
     if (isNewWithCreatedAt) {
       cleanPayload.createdAt = serverTimestamp();
     }
@@ -379,6 +456,103 @@ export async function removeDocument(colName: string, docId: string): Promise<vo
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
+}
+
+export async function logAdminActivity(
+  actorEmail: string | null | undefined,
+  action: ActivityLogItem['action'],
+  entityType: string,
+  entityId: string,
+  summary: string
+): Promise<void> {
+  if (!actorEmail) return;
+  try {
+    const logId = slugifyId('log', `${action}-${entityType}`);
+    await setDoc(doc(db, 'activity_logs', logId), {
+      actorEmail: actorEmail.slice(0, 180),
+      action,
+      entityType: entityType.slice(0, 60),
+      entityId: entityId.slice(0, 128),
+      summary: summary.slice(0, 400),
+      createdAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('Activity log write skipped:', err);
+  }
+}
+
+export async function saveContentVersion(
+  entityType: string,
+  entityId: string,
+  label: string,
+  snapshot: unknown,
+  actorEmail: string | null | undefined
+): Promise<void> {
+  if (!actorEmail) return;
+  try {
+    const serialized = JSON.stringify(snapshot).slice(0, 39500);
+    const versionId = slugifyId('ver', `${entityType}-${entityId}`);
+    await setDoc(doc(db, 'content_versions', versionId), {
+      entityType: entityType.slice(0, 60),
+      entityId: entityId.slice(0, 128),
+      label: label.slice(0, 180),
+      snapshotJson: serialized,
+      actorEmail: actorEmail.slice(0, 180),
+      createdAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('Version snapshot skipped:', err);
+  }
+}
+
+export async function restoreContentVersion(
+  version: ContentVersionItem,
+  actorEmail: string | null | undefined
+): Promise<void> {
+  const parsed = JSON.parse(version.snapshotJson) as Record<string, unknown>;
+  const colMap: Record<string, string> = {
+    profile: 'profiles',
+    about: 'about_sections',
+    settings: 'site_settings',
+    project: 'projects',
+    section: 'website_sections',
+  };
+  const colName = colMap[version.entityType] || version.entityType;
+  const payload = { ...parsed };
+  delete payload.createdAt;
+  delete payload.updatedAt;
+  await saveDocument(colName, version.entityId, payload, false);
+  await logAdminActivity(
+    actorEmail,
+    'restore_version',
+    version.entityType,
+    version.entityId,
+    `Restored snapshot "${version.label}"`
+  );
+}
+
+export function buildPortfolioBackupPayload(adminData: AdminAllData) {
+  return {
+    exportedAt: new Date().toISOString(),
+    owner: adminData.profile.fullName,
+    profile: adminData.profile,
+    about: adminData.about,
+    settings: adminData.settings,
+    services: adminData.services,
+    skills: adminData.skills,
+    statistics: adminData.statistics,
+    experiences: adminData.experiences,
+    education: adminData.education,
+    categories: adminData.categories,
+    projects: adminData.projects,
+    certifications: adminData.certifications,
+    achievements: adminData.achievements,
+    testimonials: adminData.testimonials,
+    socialLinks: adminData.socialLinks,
+    websiteSections: adminData.websiteSections,
+    navigationItems: adminData.navigationItems,
+    media: adminData.media,
+  };
 }
 
 export function slugifyId(prefix: string, input: string): string {

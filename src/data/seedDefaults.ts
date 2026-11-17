@@ -4,6 +4,7 @@ import type {
   CertificationItem,
   EducationItem,
   ExperienceItem,
+  NavigationItem,
   PortfolioBundle,
   ProfileData,
   ProjectCategoryItem,
@@ -13,6 +14,7 @@ import type {
   SkillItem,
   SocialLinkItem,
   StatisticItem,
+  WebsiteSectionItem,
 } from '../types/portfolio';
 import { BUNDLED_ASSETS } from '../lib/assetUrl';
 
@@ -20,16 +22,25 @@ export const DEFAULT_PROFILE: ProfileData = {
   id: 'main',
   fullName: 'Md. Nabiul Islam',
   headline: 'Graphic Designer, Digital Marketer, AI Automation Enthusiast and Chemistry Student',
+  shortIntro: 'Creative graphic designer, digital marketer, and AI automation builder crafting precision brand systems and intelligent workflows.',
+  tagline: 'Creative Thinking. Strategic Design. Intelligent Automation.',
+  careerObjective: 'My goal is to combine creativity, strategic thinking, and technology to deliver impactful results.',
+  dateOfBirth: '',
   heroDescription:
     'I transform creative ideas into meaningful digital experiences through graphic design, strategic marketing, and intelligent automation. I combine visual creativity with technology to help brands communicate better, grow faster, and work smarter.',
   location: 'Kanchipara, Fulchhari, Gaibandha, Rangpur, Bangladesh',
   email: 'nabi_ul@yahoo.com',
   phone: '01795110021',
+  whatsapp: '',
+  googleMapsUrl: '',
   availability: 'Available for freelance projects and full-time opportunities.',
   isAvailable: true,
   profileImageUrl: BUNDLED_ASSETS.portrait,
+  coverImageUrl: BUNDLED_ASSETS.showcasePoster,
   cvUrl: '/api/cv/download',
   cvFilename: 'Md_Nabiul_Islam_CV.pdf',
+  cvButtonText: 'Download CV',
+  cvVisible: true,
 };
 
 export const DEFAULT_ABOUT: AboutData = {
@@ -460,20 +471,63 @@ export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
   { id: 'soc-youtube', platform: 'YouTube', url: '', isVisible: false, sortOrder: 8 },
 ];
 
+export const DEFAULT_NAVIGATION_ITEMS: NavigationItem[] = [
+  { id: 'nav-home', label: 'Home', destination: '/', sectionId: 'hero', isExternal: false, isVisible: true, sortOrder: 1 },
+  { id: 'nav-about', label: 'About', destination: '/about', sectionId: 'about', isExternal: false, isVisible: true, sortOrder: 2 },
+  { id: 'nav-services', label: 'Services', destination: '/#services', sectionId: 'services', isExternal: false, isVisible: true, sortOrder: 3 },
+  { id: 'nav-skills', label: 'Skills', destination: '/#skills', sectionId: 'skills', isExternal: false, isVisible: true, sortOrder: 4 },
+  { id: 'nav-experience', label: 'Experience', destination: '/#experience', sectionId: 'experience', isExternal: false, isVisible: true, sortOrder: 5 },
+  { id: 'nav-projects', label: 'Projects', destination: '/projects', sectionId: 'projects', isExternal: false, isVisible: true, sortOrder: 6 },
+  { id: 'nav-contact', label: 'Contact', destination: '/contact', sectionId: 'contact', isExternal: false, isVisible: true, sortOrder: 7 },
+];
+
+export const DEFAULT_WEBSITE_SECTIONS: WebsiteSectionItem[] = [];
+
 export const DEFAULT_SETTINGS: SiteSettingsData = {
   id: 'main',
   siteTitle: 'Md. Nabiul Islam | Graphic Designer, Digital Marketer & AI Automation Specialist',
   tagline: 'Creative Thinking. Strategic Design. Intelligent Automation.',
   seoDescription:
     'Portfolio of Md. Nabiul Islam — Graphic Designer, Digital Marketer, AI Automation Enthusiast and Chemistry Student from Gaibandha, Bangladesh.',
+  seoKeywords: 'Md. Nabiul Islam, Graphic Designer, Digital Marketer, AI Automation, n8n Workflows, Web Analytics, Bangladesh',
+  ogTitle: 'Md. Nabiul Islam | Creative & AI Automation Portfolio',
+  ogDescription:
+    'Graphic Designer, Digital Marketer, AI Automation Enthusiast and Chemistry Student combining visual creativity with intelligent technology.',
   ogImageUrl: BUNDLED_ASSETS.portrait,
+  canonicalUrl: '',
+  robotsMeta: 'index, follow',
+  pageSeoJson: '{}',
   showcaseVideoUrl: '/media/creative-showcase.mp4',
   showcasePosterUrl: BUNDLED_ASSETS.showcasePoster,
   marqueeText:
     'GRAPHIC DESIGN — BRAND IDENTITY — DIGITAL MARKETING — AI AUTOMATION — N8N WORKFLOWS — SOCIAL MEDIA STRATEGY — WEB ANALYTICS — CREATIVE TECHNOLOGY',
   accentGoldHex: '#D4B475',
+  primaryBgHex: '#070708',
+  secondaryBgHex: '#111114',
+  textColorHex: '#F5F2EB',
+  headingFont: 'cormorant',
+  bodyFont: 'jakarta',
+  themeMode: 'dark',
+  buttonStyle: 'sweep',
+  borderRadiusStyle: 'rounded',
+  sectionSpacing: 'standard',
+  headerStyle: 'glass',
+  footerStyle: 'editorial',
+  heroHeadlineLines: ['Designing Brands.', 'Scaling Strategy.', 'Automating Impact.'],
+  heroSubtitle: '',
+  heroPrimaryCtaText: 'Explore My Work',
+  heroPrimaryCtaLink: '#projects',
+  heroSecondaryCtaText: 'Contact Me',
+  heroSecondaryCtaLink: '/contact',
+  heroBackgroundImageUrl: '',
+  showHeroSection: true,
+  heroAnimationIntensity: 'full',
   enable3D: true,
   enableCustomCursor: true,
+  contactFormEnabled: true,
+  contactAvailabilityNote: 'Direct responses typically within 24 hours.',
+  showAdminFooterLink: true,
+  sessionTimeoutMinutes: 60,
 };
 
 export const DEFAULT_PORTFOLIO_BUNDLE: PortfolioBundle = {
@@ -490,5 +544,7 @@ export const DEFAULT_PORTFOLIO_BUNDLE: PortfolioBundle = {
   achievements: DEFAULT_ACHIEVEMENTS,
   testimonials: [],
   socialLinks: DEFAULT_SOCIAL_LINKS,
+  websiteSections: DEFAULT_WEBSITE_SECTIONS,
+  navigationItems: DEFAULT_NAVIGATION_ITEMS,
   settings: DEFAULT_SETTINGS,
 };

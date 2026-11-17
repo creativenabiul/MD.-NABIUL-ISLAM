@@ -47,6 +47,25 @@ export function ProjectDetailPage() {
     };
   }, [slug, data.projects]);
 
+  // Apply dynamic per-project SEO metadata
+  useEffect(() => {
+    if (!project) return;
+    const title = project.seoTitle || `${project.title} | ${data.profile.fullName}`;
+    const desc = project.seoDescription || project.shortDescription;
+    const ogImg = project.ogImageUrl || project.coverImageUrl;
+
+    document.title = title;
+    const updateMeta = (selector: string, content: string) => {
+      if (!content) return;
+      const el = document.querySelector(selector);
+      if (el) el.setAttribute('content', content);
+    };
+    updateMeta('meta[name="description"]', desc);
+    updateMeta('meta[property="og:title"]', title);
+    updateMeta('meta[property="og:description"]', desc);
+    updateMeta('meta[property="og:image"]', ogImg);
+  }, [project, data.profile.fullName]);
+
   const related = data.projects.filter((p) => p.slug !== slug).slice(0, 2);
 
   return (

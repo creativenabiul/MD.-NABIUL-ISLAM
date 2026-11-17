@@ -1,19 +1,82 @@
 import { Link } from 'react-router-dom';
-import type { ProfileData, SocialLinkItem } from '../types/portfolio';
+import { usePortfolio } from '../context/PortfolioContext';
+import type { NavigationItem, ProfileData, SocialLinkItem } from '../types/portfolio';
 
 interface FooterProps {
   profile: ProfileData;
   socialLinks: SocialLinkItem[];
   tagline?: string;
+  navigationItems?: NavigationItem[];
+  footerStyle?: 'editorial' | 'compact';
+  showAdminLink?: boolean;
 }
 
 export function Footer({
   profile,
   socialLinks,
-  tagline = 'Creative Thinking. Strategic Design. Intelligent Automation.',
+  tagline,
+  navigationItems,
+  footerStyle,
+  showAdminLink,
 }: FooterProps) {
+  const { data } = usePortfolio();
   const activeSocials = socialLinks.filter((s) => s.isVisible && s.url.trim().length > 0);
   const year = new Date().getFullYear();
+
+  const resolvedTagline = tagline ?? data.settings.tagline ?? 'Creative Thinking. Strategic Design. Intelligent Automation.';
+  const resolvedStyle = footerStyle ?? data.settings.footerStyle ?? 'editorial';
+  const resolvedShowAdmin = showAdminLink ?? data.settings.showAdminFooterLink ?? true;
+
+  const navLinks = (navigationItems ?? data.navigationItems ?? [])
+    .filter((n) => n.isVisible && !n.parentLabel)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .slice(0, 6);
+
+  const whatsappDigits = (profile.whatsapp || '').replace(/[^\d+]/g, '');
+
+  if (resolvedStyle === 'compact') {
+    return (
+      <footer className="border-t border-white/10 bg-[#070708] py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <Link to="/" className="font-serif text-xl font-semibold text-[#F5F2EB]">
+              {profile.fullName}
+            </Link>
+            <p className="mt-1 text-xs text-[#8C8A84]">{resolvedTagline}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#F5F2EB]/75">
+            <a href={`mailto:${profile.email}`} className="hover:text-[#D4B475] transition-colors">
+              {profile.email}
+            </a>
+            {activeSocials.map((soc) => (
+              <a
+                key={soc.id}
+                href={soc.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-[#D4B475] hover:text-[#E8D2A0] underline underline-offset-4"
+              >
+                {soc.platform}
+              </a>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 text-xs text-[#8C8A84]">
+            <p>© {year} {profile.fullName}.</p>
+            {resolvedShowAdmin && (
+              <Link
+                to="/admin"
+                className="text-[11px] text-[#8C8A84]/45 hover:text-[#8C8A84] transition-colors"
+              >
+                Admin
+              </Link>
+            )}
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="border-t border-white/10 bg-[#070708] py-14 px-4 sm:px-6 lg:px-8">
@@ -24,7 +87,7 @@ export function Footer({
               {profile.fullName}
             </Link>
             <p className="mt-3 text-sm text-[#8C8A84] leading-relaxed max-w-sm">
-              {tagline}
+              {resolvedTagline}
             </p>
             <p className="mt-2 text-xs text-[#8C8A84]/80">{profile.location}</p>
           </div>
@@ -34,26 +97,32 @@ export function Footer({
               Navigation
             </h3>
             <ul className="space-y-2.5 text-sm text-[#F5F2EB]/75">
-              <li>
-                <Link to="/" className="hover:text-[#D4B475] transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="hover:text-[#D4B475] transition-colors">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link to="/projects" className="hover:text-[#D4B475] transition-colors">
-                  Projects
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="hover:text-[#D4B475] transition-colors">
-                  Contact
-                </Link>
-              </li>
+              {(navLinks.length > 0
+                ? navLinks
+                : [
+                    { id: 'f-home', label: 'Home', destination: '/', isExternal: false },
+                    { id: 'f-about', label: 'About', destination: '/about', isExternal: false },
+                    { id: 'f-projects', label: 'Projects', destination: '/projects', isExternal: false },
+                    { id: 'f-contact', label: 'Contact', destination: '/contact', isExternal: false },
+                  ]
+              ).map((nav) => (
+                <li key={nav.id}>
+                  {nav.isExternal || /^https?:\/\//i.test(nav.destination) ? (
+                    <a
+                      href={nav.destination}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="hover:text-[#D4B475] transition-colors"
+                    >
+                      {nav.label}
+                    </a>
+                  ) : (
+                    <Link to={nav.destination} className="hover:text-[#D4B475] transition-colors">
+                      {nav.label}
+                    </Link>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -72,6 +141,18 @@ export function Footer({
                   {profile.phone}
                 </a>
               </li>
+              {whatsappDigits && (
+                <li>
+                  <a
+                    href={`https://wa.me/${whatsappDigits.replace(/^\+/, '')}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="hover:text-[#D4B475] transition-colors tabular-nums"
+                  >
+                    WhatsApp: {profile.whatsapp}
+                  </a>
+                </li>
+              )}
             </ul>
 
             {activeSocials.length > 0 && (
@@ -96,12 +177,14 @@ export function Footer({
           <p>
             © {year} {profile.fullName}. All rights reserved.
           </p>
-          <Link
-            to="/admin"
-            className="text-[11px] text-[#8C8A84]/45 hover:text-[#8C8A84] transition-colors"
-          >
-            Admin
-          </Link>
+          {resolvedShowAdmin && (
+            <Link
+              to="/admin"
+              className="text-[11px] text-[#8C8A84]/45 hover:text-[#8C8A84] transition-colors"
+            >
+              Admin
+            </Link>
+          )}
         </div>
       </div>
     </footer>

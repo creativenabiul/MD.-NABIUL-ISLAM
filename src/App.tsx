@@ -12,6 +12,7 @@ import { ContactPage } from './pages/ContactPage';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminProfileAboutPage } from './pages/admin/AdminProfileAboutPage';
+import { AdminHeroPage, AdminAboutPage } from './pages/admin/AdminHeroAboutPages';
 import { AdminProjectsPage } from './pages/admin/AdminProjectsPage';
 import {
   AdminServicesPage,
@@ -20,10 +21,19 @@ import {
   AdminExperiencePage,
   AdminEducationPage,
   AdminCertificationsPage,
+  AdminAchievementsPage,
   AdminTestimonialsPage,
 } from './pages/admin/AdminModulesPages';
+import { AdminSectionBuilderPage } from './pages/admin/AdminSectionBuilderPage';
 import { AdminMessagesPage } from './pages/admin/AdminMessagesPage';
 import { AdminMediaPage, AdminSettingsPage } from './pages/admin/AdminMediaSettingsPages';
+import {
+  AdminNavigationPage,
+  AdminSeoPage,
+  AdminDesignPage,
+  AdminSecurityPage,
+  AdminLogsPage,
+} from './pages/admin/AdminGrowthSystemPages';
 
 function getRouterBasename(): string | undefined {
   const base = import.meta.env.BASE_URL;
@@ -69,16 +79,25 @@ export default function App() {
               <Route path="/admin/login" element={<AdminLoginPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/profile" element={<AdminProfileAboutPage />} />
-              <Route path="/admin/projects" element={<AdminProjectsPage />} />
+              <Route path="/admin/hero" element={<AdminHeroPage />} />
+              <Route path="/admin/about" element={<AdminAboutPage />} />
               <Route path="/admin/services" element={<AdminServicesPage />} />
               <Route path="/admin/skills" element={<AdminSkillsPage />} />
               <Route path="/admin/statistics" element={<AdminStatisticsPage />} />
               <Route path="/admin/experience" element={<AdminExperiencePage />} />
               <Route path="/admin/education" element={<AdminEducationPage />} />
+              <Route path="/admin/projects" element={<AdminProjectsPage />} />
               <Route path="/admin/certifications" element={<AdminCertificationsPage />} />
+              <Route path="/admin/achievements" element={<AdminAchievementsPage />} />
               <Route path="/admin/testimonials" element={<AdminTestimonialsPage />} />
-              <Route path="/admin/messages" element={<AdminMessagesPage />} />
+              <Route path="/admin/sections" element={<AdminSectionBuilderPage />} />
               <Route path="/admin/media" element={<AdminMediaPage />} />
+              <Route path="/admin/navigation" element={<AdminNavigationPage />} />
+              <Route path="/admin/messages" element={<AdminMessagesPage />} />
+              <Route path="/admin/seo" element={<AdminSeoPage />} />
+              <Route path="/admin/design" element={<AdminDesignPage />} />
+              <Route path="/admin/security" element={<AdminSecurityPage />} />
+              <Route path="/admin/logs" element={<AdminLogsPage />} />
               <Route path="/admin/settings" element={<AdminSettingsPage />} />
 
               {/* Fallback */}

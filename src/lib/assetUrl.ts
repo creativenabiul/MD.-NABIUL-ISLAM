@@ -3,7 +3,7 @@ import brandIdentityImg from '../assets/images/project_brand_identity_1794642358
 import socialCampaignImg from '../assets/images/project_social_campaign_1794642358570.jpg';
 import aiAutomationImg from '../assets/images/project_ai_automation_1794642360643.jpg';
 import showcasePosterImg from '../assets/images/showcase_video_poster_1794642361264.jpg';
-import type { PortfolioBundle, ProjectItem } from '../types/portfolio';
+import type { PortfolioBundle, ProjectItem, SectionContentBlock, WebsiteSectionItem } from '../types/portfolio';
 
 export const BUNDLED_ASSETS = {
   portrait: portraitImg,
@@ -36,27 +36,22 @@ export function resolveAssetUrl(url: string | undefined | null): string {
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  // Direct match for legacy unbundled /src/assets/images/... paths
   if (LEGACY_ASSET_MAP[trimmed]) {
     return LEGACY_ASSET_MAP[trimmed];
   }
 
-  // External URLs, data URIs, blob URIs
   if (/^(https?:|data:|blob:)/i.test(trimmed)) {
     return trimmed;
   }
 
-  // Static CV fallback when hosted on GitHub Pages (no Express backend)
   if (trimmed === '/api/cv/download' && isStaticGitHubHost()) {
     return `${getBaseUrl()}Md_Nabiul_Islam_CV.pdf`;
   }
 
-  // Keep API routes untouched on server-backed hosts
   if (trimmed.startsWith('/api/')) {
     return trimmed;
   }
 
-  // Prefix root-relative static files (e.g. /media/...) with Vite BASE_URL
   if (trimmed.startsWith('/')) {
     const base = getBaseUrl();
     if (base !== '/' && trimmed.startsWith(base)) {
@@ -72,7 +67,30 @@ export function normalizeProject(project: ProjectItem): ProjectItem {
   return {
     ...project,
     coverImageUrl: resolveAssetUrl(project.coverImageUrl),
+    ogImageUrl: resolveAssetUrl(project.ogImageUrl),
     galleryImages: (project.galleryImages || []).map((img) => resolveAssetUrl(img)).filter(Boolean),
+  };
+}
+
+export function parseSectionBlocks(blocksJson: string | undefined): SectionContentBlock[] {
+  if (!blocksJson) return [];
+  try {
+    const parsed = JSON.parse(blocksJson);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((b: SectionContentBlock) => ({
+      ...b,
+      mediaUrl: b.mediaUrl ? resolveAssetUrl(b.mediaUrl) : undefined,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function normalizeWebsiteSection(section: WebsiteSectionItem): WebsiteSectionItem {
+  const blocks = parseSectionBlocks(section.blocksJson);
+  return {
+    ...section,
+    blocksJson: JSON.stringify(blocks),
   };
 }
 
@@ -82,26 +100,50 @@ export function normalizePortfolioBundle(bundle: PortfolioBundle): PortfolioBund
     profile: {
       ...bundle.profile,
       profileImageUrl: resolveAssetUrl(bundle.profile.profileImageUrl),
+      coverImageUrl: resolveAssetUrl(bundle.profile.coverImageUrl),
       cvUrl: resolveAssetUrl(bundle.profile.cvUrl),
     },
     about: {
       ...bundle.about,
       portraitImageUrl: resolveAssetUrl(bundle.about.portraitImageUrl),
     },
+    services: bundle.services.map((s) => ({
+      ...s,
+      imageUrl: resolveAssetUrl(s.imageUrl),
+    })),
+    skills: bundle.skills.map((s) => ({
+      ...s,
+      iconUrl: resolveAssetUrl(s.iconUrl),
+    })),
+    experiences: bundle.experiences.map((e) => ({
+      ...e,
+      logoUrl: resolveAssetUrl(e.logoUrl),
+    })),
+    education: bundle.education.map((ed) => ({
+      ...ed,
+      certificateUrl: resolveAssetUrl(ed.certificateUrl),
+    })),
     projects: bundle.projects.map(normalizeProject),
     certifications: bundle.certifications.map((c) => ({
       ...c,
       imageUrl: resolveAssetUrl(c.imageUrl),
     })),
+    achievements: bundle.achievements.map((a) => ({
+      ...a,
+      evidenceImageUrl: resolveAssetUrl(a.evidenceImageUrl),
+    })),
     testimonials: bundle.testimonials.map((t) => ({
       ...t,
       imageUrl: resolveAssetUrl(t.imageUrl),
     })),
+    websiteSections: (bundle.websiteSections || []).map(normalizeWebsiteSection),
+    navigationItems: bundle.navigationItems || [],
     settings: {
       ...bundle.settings,
       ogImageUrl: resolveAssetUrl(bundle.settings.ogImageUrl),
       showcaseVideoUrl: resolveAssetUrl(bundle.settings.showcaseVideoUrl),
       showcasePosterUrl: resolveAssetUrl(bundle.settings.showcasePosterUrl),
+      heroBackgroundImageUrl: resolveAssetUrl(bundle.settings.heroBackgroundImageUrl),
     },
   };
 }

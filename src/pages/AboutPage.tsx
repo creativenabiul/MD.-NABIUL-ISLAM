@@ -1,14 +1,26 @@
 import { Download, Award, Briefcase, GraduationCap } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
+import type { AboutInfoBlock } from '../types/portfolio';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { SectionHeading, ScrollRevealParagraph } from '../components/KineticTypography';
 import { MagneticButton } from '../components/MagneticButton';
 
+function parseAboutBlocks(raw?: string): AboutInfoBlock[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((b) => b && (b.heading || b.body)) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function AboutPage() {
   const { data } = usePortfolio();
   const { profile, about, experiences, education, certifications, achievements, socialLinks, settings } =
     data;
+  const extraBlocks = parseAboutBlocks(about.additionalBlocksJson);
 
   return (
     <div className="min-h-screen bg-[#070708] text-[#F5F2EB] flex flex-col">
@@ -40,9 +52,27 @@ export function AboutPage() {
                 className="font-serif text-2xl sm:text-3xl leading-snug"
               />
               <p className="text-base text-[#F5F2EB]/80 leading-relaxed">{about.background}</p>
+              {about.journey && (
+                <p className="text-base text-[#F5F2EB]/80 leading-relaxed">{about.journey}</p>
+              )}
               <p className="text-base text-[#D4B475] font-medium leading-relaxed">
                 {about.careerObjective}
               </p>
+
+              {extraBlocks.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  {extraBlocks.map((blk) => (
+                    <div key={blk.id} className="p-4 rounded-xl bg-[#111114] border border-white/10 space-y-1.5">
+                      {blk.heading && (
+                        <h3 className="font-serif text-lg font-semibold text-[#D4B475]">
+                          {blk.heading}
+                        </h3>
+                      )}
+                      {blk.body && <p className="text-xs text-[#F5F2EB]/80 leading-relaxed">{blk.body}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="pt-4 border-t border-white/10 space-y-2 text-sm text-[#8C8A84]">
                 <p>Location: {profile.location}</p>
@@ -50,7 +80,7 @@ export function AboutPage() {
               </div>
 
               <div className="pt-2 flex flex-wrap gap-4">
-                {profile.cvUrl && (
+                {profile.cvUrl && profile.cvVisible !== false && (
                   <MagneticButton
                     href={profile.cvUrl}
                     download={profile.cvFilename || 'Md_Nabiul_Islam_CV.pdf'}
@@ -58,7 +88,7 @@ export function AboutPage() {
                   >
                     <span className="inline-flex items-center gap-2">
                       <Download className="w-4 h-4" />
-                      Download CV
+                      {profile.cvButtonText || 'Download CV'}
                     </span>
                   </MagneticButton>
                 )}
@@ -107,6 +137,9 @@ export function AboutPage() {
                   </p>
                   <h3 className="mt-1 font-serif text-xl font-semibold">{edu.degree}</h3>
                   <p className="text-sm text-[#8C8A84]">{edu.institution}</p>
+                  {edu.result && (
+                    <p className="mt-1 text-xs font-mono text-[#E8D2A0]/85">{edu.result}</p>
+                  )}
                 </div>
               ))}
             </div>
