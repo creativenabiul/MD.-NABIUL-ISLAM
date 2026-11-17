@@ -8,6 +8,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { ProjectCard } from '../components/ProjectCard';
 import { MagneticButton } from '../components/MagneticButton';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const LazyProjectMockupCanvas = lazy(() =>
   import('../three/ProjectMockupCanvas').then((m) => ({ default: m.ProjectMockupCanvas }))
@@ -115,13 +116,27 @@ export function ProjectDetailPage() {
                 </p>
                 <span className="text-xs text-[#8C8A84]">Drag to rotate · Switch camera angles</span>
               </div>
-              <Suspense
+              <ErrorBoundary
                 fallback={
-                  <div className="w-full h-[420px] rounded-2xl bg-[#111114] border border-white/10" />
+                  <div className="w-full h-[320px] rounded-2xl bg-[#111114] border border-white/10 overflow-hidden">
+                    {project.coverImageUrl && (
+                      <img
+                        src={project.coverImageUrl}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
                 }
               >
-                <LazyProjectMockupCanvas imageUrl={project.coverImageUrl} title={project.title} />
-              </Suspense>
+                <Suspense
+                  fallback={
+                    <div className="w-full h-[420px] rounded-2xl bg-[#111114] border border-white/10" />
+                  }
+                >
+                  <LazyProjectMockupCanvas imageUrl={project.coverImageUrl} title={project.title} />
+                </Suspense>
+              </ErrorBoundary>
             </section>
 
             {/* Case Study Breakdown */}

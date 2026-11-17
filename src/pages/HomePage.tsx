@@ -16,6 +16,7 @@ import { TestimonialCarousel } from '../components/TestimonialCarousel';
 import { ContactFormSection } from '../components/ContactFormSection';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const LazyHeroCanvas = lazy(() =>
   import('../three/HeroCanvas').then((m) => ({ default: m.HeroCanvas }))
@@ -78,13 +79,15 @@ export function HomePage() {
       >
         {/* 3D Interactive Scene Backdrop */}
         <div className="absolute inset-0 z-0">
-          <Suspense
-            fallback={
-              <div className="w-full h-full bg-[#070708]" />
-            }
-          >
-            <LazyHeroCanvas enabled={settings.enable3D} />
-          </Suspense>
+          <ErrorBoundary fallback={<div className="w-full h-full bg-[#070708]" />}>
+            <Suspense
+              fallback={
+                <div className="w-full h-full bg-[#070708]" />
+              }
+            >
+              <LazyHeroCanvas enabled={settings.enable3D} />
+            </Suspense>
+          </ErrorBoundary>
           {/* Contrast scrim for left-column typography legibility */}
           <div
             aria-hidden="true"

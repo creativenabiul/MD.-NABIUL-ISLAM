@@ -195,7 +195,8 @@ export function ProjectMockupCanvas({ imageUrl, title }: ProjectMockupCanvasProp
 
     let frameId = 0;
     let disposed = false;
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
+    timer.connect(document);
     const targetPos = new THREE.Vector3(1.8, 1.55, 5.2);
     const targetLook = new THREE.Vector3(0.2, 0.25, 0);
     let userDragging = false;
@@ -206,7 +207,8 @@ export function ProjectMockupCanvas({ imageUrl, title }: ProjectMockupCanvasProp
 
     function animate() {
       if (disposed) return;
-      const dt = Math.min(clock.getDelta(), 0.05);
+      timer.update();
+      const dt = Math.min(timer.getDelta(), 0.05);
 
       if (!userDragging) {
         if (viewModeRef.current === 'studio') {
@@ -245,6 +247,7 @@ export function ProjectMockupCanvas({ imageUrl, title }: ProjectMockupCanvasProp
       cancelAnimationFrame(frameId);
       clearTimeout(frameId);
       window.removeEventListener('resize', onResize);
+      timer.dispose();
       controls.dispose();
       disposables.forEach((g) => g.dispose());
       aluminumMat.dispose();

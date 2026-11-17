@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { AuthProvider } from './context/AuthContext';
 import { PortfolioProvider, usePortfolio } from './context/PortfolioContext';
 import { CustomCursor } from './components/CustomCursor';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomePage } from './pages/HomePage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
@@ -24,6 +25,14 @@ import {
 import { AdminMessagesPage } from './pages/admin/AdminMessagesPage';
 import { AdminMediaPage, AdminSettingsPage } from './pages/admin/AdminMediaSettingsPages';
 
+function getRouterBasename(): string | undefined {
+  const base = import.meta.env.BASE_URL;
+  if (base && base !== '/' && base !== './') {
+    return base.replace(/\/+$/, '');
+  }
+  return undefined;
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -41,41 +50,43 @@ function PublicCursorLayer() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <PortfolioProvider>
-          <ScrollToTop />
-          <PublicCursorLayer />
-          <Routes>
-            {/* Public Portfolio Routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/projects/:slug" element={<ProjectDetailPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
+    <ErrorBoundary>
+      <BrowserRouter basename={getRouterBasename()}>
+        <AuthProvider>
+          <PortfolioProvider>
+            <ScrollToTop />
+            <PublicCursorLayer />
+            <Routes>
+              {/* Public Portfolio Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/:slug" element={<ProjectDetailPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
 
-            {/* Protected Admin Panel Routes */}
-            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/admin/profile" element={<AdminProfileAboutPage />} />
-            <Route path="/admin/projects" element={<AdminProjectsPage />} />
-            <Route path="/admin/services" element={<AdminServicesPage />} />
-            <Route path="/admin/skills" element={<AdminSkillsPage />} />
-            <Route path="/admin/statistics" element={<AdminStatisticsPage />} />
-            <Route path="/admin/experience" element={<AdminExperiencePage />} />
-            <Route path="/admin/education" element={<AdminEducationPage />} />
-            <Route path="/admin/certifications" element={<AdminCertificationsPage />} />
-            <Route path="/admin/testimonials" element={<AdminTestimonialsPage />} />
-            <Route path="/admin/messages" element={<AdminMessagesPage />} />
-            <Route path="/admin/media" element={<AdminMediaPage />} />
-            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+              {/* Protected Admin Panel Routes */}
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="/admin/login" element={<AdminLoginPage />} />
+              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin/profile" element={<AdminProfileAboutPage />} />
+              <Route path="/admin/projects" element={<AdminProjectsPage />} />
+              <Route path="/admin/services" element={<AdminServicesPage />} />
+              <Route path="/admin/skills" element={<AdminSkillsPage />} />
+              <Route path="/admin/statistics" element={<AdminStatisticsPage />} />
+              <Route path="/admin/experience" element={<AdminExperiencePage />} />
+              <Route path="/admin/education" element={<AdminEducationPage />} />
+              <Route path="/admin/certifications" element={<AdminCertificationsPage />} />
+              <Route path="/admin/testimonials" element={<AdminTestimonialsPage />} />
+              <Route path="/admin/messages" element={<AdminMessagesPage />} />
+              <Route path="/admin/media" element={<AdminMediaPage />} />
+              <Route path="/admin/settings" element={<AdminSettingsPage />} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </PortfolioProvider>
-      </AuthProvider>
-    </BrowserRouter>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </PortfolioProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

@@ -233,7 +233,7 @@ export function HeroCanvas({ enabled = true }: HeroCanvasProps) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
     renderer.shadowMap.enabled = !isSoftwareGl && !isMobile;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     container.appendChild(renderer.domElement);
 
@@ -548,7 +548,8 @@ export function HeroCanvas({ enabled = true }: HeroCanvasProps) {
 
     let frameId = 0;
     let disposed = false;
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
+    timer.connect(document);
     let dampedScroll = 0;
 
     function afterDraw(cb: () => void) {
@@ -578,8 +579,9 @@ export function HeroCanvas({ enabled = true }: HeroCanvasProps) {
 
     function renderFrame() {
       if (disposed) return;
-      const dt = Math.min(clock.getDelta(), 0.05);
-      const elapsed = clock.getElapsedTime();
+      timer.update();
+      const dt = Math.min(timer.getDelta(), 0.05);
+      const elapsed = timer.getElapsed();
 
       if (!reducedMotion) {
         _pointerDamped.x = THREE.MathUtils.damp(_pointerDamped.x, _pointerTarget.x, 4.5, dt);
@@ -664,6 +666,7 @@ export function HeroCanvas({ enabled = true }: HeroCanvasProps) {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
+      timer.dispose();
       disposableGeometries.forEach((g) => g.dispose());
       disposableMaterials.forEach((m) => m.dispose());
       disposableTextures.forEach((t) => t.dispose());

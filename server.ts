@@ -14,7 +14,7 @@ const firebaseConfig = JSON.parse(
   firestoreDatabaseId?: string;
 };
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'creative.nabiul@gmail.com';

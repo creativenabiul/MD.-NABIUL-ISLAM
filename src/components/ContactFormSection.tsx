@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CheckCircle2, AlertCircle, Mail, MapPin, Phone } from 'lucide-react';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import type { ProfileData, SocialLinkItem } from '../types/portfolio';
 import { MagneticButton } from './MagneticButton';
 import { SectionHeading } from './KineticTypography';
@@ -44,6 +46,23 @@ export function ContactFormSection({ profile, socialLinks }: ContactFormSectionP
 
   const activeSocials = socialLinks.filter((s) => s.isVisible && s.url.trim().length > 0);
 
+  const submitDirectToFirestore = async (values: ContactFormValues) => {
+    if (values.website && values.website.trim().length > 0) {
+      return;
+    }
+    const clean = (s: string) => s.replace(/[<>]/g, '').trim();
+    const docId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    await setDoc(doc(db, 'contact_messages', docId), {
+      name: clean(values.name),
+      email: clean(values.email).toLowerCase(),
+      subject: clean(values.subject),
+      message: clean(values.message),
+      status: 'unread',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  };
+
   const onSubmit = async (values: ContactFormValues) => {
     setSubmitState('submitting');
     setFeedbackMsg('');
@@ -53,6 +72,14 @@ export function ContactFormSection({ profile, socialLinks }: ContactFormSectionP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
+      const contentType = resp.headers.get('content-type') || '';
+      if (resp.status === 404 || resp.status === 405 || !contentType.includes('application/json')) {
+        await submitDirectToFirestore(values);
+        setSubmitState('success');
+        setFeedbackMsg('Thank you. Your inquiry has been received.');
+        reset();
+        return;
+      }
       const data = await resp.json();
       if (!resp.ok || !data.ok) {
         setSubmitState('error');
@@ -63,8 +90,15 @@ export function ContactFormSection({ profile, socialLinks }: ContactFormSectionP
       setFeedbackMsg(data.message || 'Thank you. Your inquiry has been received.');
       reset();
     } catch {
-      setSubmitState('error');
-      setFeedbackMsg('Network error. Please try again or reach out directly via email.');
+      try {
+        await submitDirectToFirestore(values);
+        setSubmitState('success');
+        setFeedbackMsg('Thank you. Your inquiry has been received.');
+        reset();
+      } catch {
+        setSubmitState('error');
+        setFeedbackMsg('Network error. Please try again or reach out directly via email.');
+      }
     }
   };
 

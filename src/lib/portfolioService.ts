@@ -47,6 +47,7 @@ import type {
   StatisticItem,
   TestimonialItem,
 } from '../types/portfolio';
+import { normalizePortfolioBundle, normalizeProject } from './assetUrl';
 import { db, handleFirestoreError, OperationType } from './firebase';
 
 function sortByOrder<T extends { sortOrder?: number }>(items: T[]): T[] {
@@ -143,7 +144,7 @@ export async function fetchPublicPortfolio(): Promise<PortfolioBundle> {
         ? sortByOrder(socialSnap.docs.map((d) => ({ ...(d.data() as SocialLinkItem), id: d.id })))
         : sortByOrder(DEFAULT_SOCIAL_LINKS);
 
-    return {
+    return normalizePortfolioBundle({
       profile,
       about,
       services,
@@ -158,10 +159,10 @@ export async function fetchPublicPortfolio(): Promise<PortfolioBundle> {
       testimonials,
       socialLinks,
       settings,
-    };
+    });
   } catch (error) {
     console.warn('Using verified default portfolio bundle:', error);
-    return DEFAULT_PORTFOLIO_BUNDLE;
+    return normalizePortfolioBundle(DEFAULT_PORTFOLIO_BUNDLE);
   }
 }
 
@@ -175,12 +176,13 @@ export async function fetchPublicProjectBySlug(slug: string): Promise<ProjectIte
     const snap = await getDocs(q);
     if (!snap.empty) {
       const d = snap.docs[0];
-      return { ...(d.data() as ProjectItem), id: d.id };
+      return normalizeProject({ ...(d.data() as ProjectItem), id: d.id });
     }
   } catch (error) {
     console.warn('Project slug lookup fallback:', error);
   }
-  return DEFAULT_PROJECTS.find((p) => p.slug === slug) ?? null;
+  const fallback = DEFAULT_PROJECTS.find((p) => p.slug === slug) ?? null;
+  return fallback ? normalizeProject(fallback) : null;
 }
 
 export async function ensureAdminSeeded(uid: string, email: string): Promise<void> {

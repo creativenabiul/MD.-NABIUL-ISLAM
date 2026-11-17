@@ -14,6 +14,7 @@ import type {
   SocialLinkItem,
   StatisticItem,
 } from '../types/portfolio';
+import { BUNDLED_ASSETS } from '../lib/assetUrl';
 
 export const DEFAULT_PROFILE: ProfileData = {
   id: 'main',
@@ -26,7 +27,7 @@ export const DEFAULT_PROFILE: ProfileData = {
   phone: '01795110021',
   availability: 'Available for freelance projects and full-time opportunities.',
   isAvailable: true,
-  profileImageUrl: '/src/assets/images/nabiul_portrait_1794642359330.jpg',
+  profileImageUrl: BUNDLED_ASSETS.portrait,
   cvUrl: '/api/cv/download',
   cvFilename: 'Md_Nabiul_Islam_CV.pdf',
 };
@@ -47,7 +48,7 @@ export const DEFAULT_ABOUT: AboutData = {
     'Programming & Creative Technology',
     'Chemical Sciences',
   ],
-  portraitImageUrl: '/src/assets/images/nabiul_portrait_1794642359330.jpg',
+  portraitImageUrl: BUNDLED_ASSETS.portrait,
 };
 
 export const DEFAULT_SERVICES: ServiceItem[] = [
@@ -325,10 +326,10 @@ export const DEFAULT_PROJECTS: ProjectItem[] = [
       'Complete logo suite, stationery system, editorial grid specification sheet, and print-ready packaging templates.',
     results: '',
     tools: ['Brand Identity', 'Editorial Grid', 'Typography', 'Print Mockups'],
-    coverImageUrl: '/src/assets/images/project_brand_identity_1794642358938.jpg',
+    coverImageUrl: BUNDLED_ASSETS.brandIdentity,
     galleryImages: [
-      '/src/assets/images/project_brand_identity_1794642358938.jpg',
-      '/src/assets/images/showcase_video_poster_1794642361264.jpg',
+      BUNDLED_ASSETS.brandIdentity,
+      BUNDLED_ASSETS.showcasePoster,
     ],
     liveUrl: '',
     sourceUrl: '',
@@ -357,9 +358,9 @@ export const DEFAULT_PROJECTS: ProjectItem[] = [
       'Multi-ratio social advertising templates, story frames, and unified campaign creative playbook.',
     results: '',
     tools: ['Social Media Strategy', 'Ad Creatives', 'Product Mockups', 'Art Direction'],
-    coverImageUrl: '/src/assets/images/project_social_campaign_1794642358570.jpg',
+    coverImageUrl: BUNDLED_ASSETS.socialCampaign,
     galleryImages: [
-      '/src/assets/images/project_social_campaign_1794642358570.jpg',
+      BUNDLED_ASSETS.socialCampaign,
     ],
     liveUrl: '',
     sourceUrl: '',
@@ -388,9 +389,9 @@ export const DEFAULT_PROJECTS: ProjectItem[] = [
       'Production-ready n8n workflow blueprint, Telegram bot notifier, and automated Google Sheets analytics ledger.',
     results: '',
     tools: ['n8n Workflows', 'API Integrations', 'Webhooks', 'Telegram Bots', 'Google Sheets'],
-    coverImageUrl: '/src/assets/images/project_ai_automation_1794642360643.jpg',
+    coverImageUrl: BUNDLED_ASSETS.aiAutomation,
     galleryImages: [
-      '/src/assets/images/project_ai_automation_1794642360643.jpg',
+      BUNDLED_ASSETS.aiAutomation,
     ],
     liveUrl: '',
     sourceUrl: '',
@@ -465,9 +466,9 @@ export const DEFAULT_SETTINGS: SiteSettingsData = {
   tagline: 'Creative Thinking. Strategic Design. Intelligent Automation.',
   seoDescription:
     'Portfolio of Md. Nabiul Islam — Graphic Designer, Digital Marketer, AI Automation Enthusiast and Chemistry Student from Gaibandha, Bangladesh.',
-  ogImageUrl: '/src/assets/images/nabiul_portrait_1794642359330.jpg',
+  ogImageUrl: BUNDLED_ASSETS.portrait,
   showcaseVideoUrl: '/media/creative-showcase.mp4',
-  showcasePosterUrl: '/src/assets/images/showcase_video_poster_1794642361264.jpg',
+  showcasePosterUrl: BUNDLED_ASSETS.showcasePoster,
   marqueeText:
     'GRAPHIC DESIGN — BRAND IDENTITY — DIGITAL MARKETING — AI AUTOMATION — N8N WORKFLOWS — SOCIAL MEDIA STRATEGY — WEB ANALYTICS — CREATIVE TECHNOLOGY',
   accentGoldHex: '#D4B475',
